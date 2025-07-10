@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'camera_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -234,7 +235,15 @@ class HomePage extends StatelessWidget {
               'assets/logo.png',
               height: 40,
             ),
-            const Icon(Icons.camera_alt_rounded, size: 40),
+            IconButton(
+              icon: const Icon(Icons.camera_alt_rounded, size: 40),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CameraPage()),
+                );
+              },
+            ),
           ],
         ),
       ),
