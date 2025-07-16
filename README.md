@@ -5,14 +5,18 @@ A new Flutter project.
 ##Reconfiguring project
 
 Run the following commands to download dependencies
-`flutter clean`
-`flutter pub get`
-`flutter pub upgrade`
+```
+flutter clean
+flutter pub get
+flutter pub upgrade
+```
 
 If running the project doesn't work, it's most likely due to the configuration
 -Delete the CMakeLists.txt file
--`flutter clean`
--`flutter create .`
+```
+flutter clean
+flutter create .
+```
 
 Further issues are unseen
 
