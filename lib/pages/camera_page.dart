@@ -65,7 +65,10 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Please scan a bottle/can')),
+      appBar: AppBar(
+        title: const Text('Please scan a bottle/can'),
+        backgroundColor: Colors.red, // Test color
+      ),
       body: _controller == null || !_controller!.value.isInitialized
           ? const Center(child: CircularProgressIndicator())
           : Column(
