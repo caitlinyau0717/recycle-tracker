@@ -2,15 +2,19 @@
 
 A new Flutter project.
 
-## Getting Started
+##Reconfiguring project
 
-This project is a starting point for a Flutter application.
+Run the following commands to download dependencies
+`flutter clean`
+`flutter pub get`
+`flutter pub upgrade`
 
-A few resources to get you started if this is your first Flutter project:
+If running the project doesn't work, it's most likely due to the configuration
+-Delete the CMakeLists.txt file
+-`flutter clean`
+-`flutter create .`
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Further issues are unseen
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+##Database Schema
+The schema can be found here on [DBDiagram](https://dbdiagram.io/d/NeraV3-Dev-2-0-669531689939893daef808c5)
