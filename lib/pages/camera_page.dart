@@ -119,7 +119,7 @@ class _CameraPageState extends State<CameraPage> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Please scan a bottle/can'),
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: const Color.fromARGB(255, 112, 234, 93)fromARGB(255, 187, 255, 138),
         elevation: 0,
         actions: [
           IconButton(
