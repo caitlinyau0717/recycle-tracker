@@ -21,4 +21,4 @@ flutter create .
 Further issues are unseen
 
 ## Database Schema
-The schema can be found here on [DBDiagram](https://dbdiagram.io/d/NeraV3-Dev-2-0-669531689939893daef808c5)
+The schema can be found here on [DBDiagram](https://dbdiagram.io/d/RecycleTracker-Dev-Interim-686c103bf413ba3508b0c81f)
