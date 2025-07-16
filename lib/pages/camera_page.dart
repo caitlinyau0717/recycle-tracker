@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:gal/gal.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-
+import 'package:openfoodfacts/openfoodfacts.dart';
+import 'dart:core';
 
 /*
 class CameraPage extends StatefulWidget {
@@ -182,4 +183,25 @@ class _CameraPageState extends State<CameraPage> {
       ),
     );
   }
+}
+
+
+void barcodeProductInfo() async {
+  WidgetsFlutterBinding.ensureInitialized(); // required before async in main
+
+  OpenFoodAPIConfiguration.userAgent = UserAgent(
+    name: 'Your app name',
+    url: 'Your url, if applicable',
+  );
+
+  final String barcode = '5449000131805'; // Example: Coca-Cola
+
+  ProductQueryConfiguration config = ProductQueryConfiguration(
+    barcode,
+    version: ProductQueryVersion.v3,
+  );
+
+  ProductResultV3 result = await OpenFoodAPIClient.getProductV3(config);
+
+  print(result.product?.productName ?? 'Product not found');
 }

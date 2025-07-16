@@ -38,6 +38,7 @@ dependencies:
   fl_chart: ^1.0.0
   camera: ^0.10.5+5
   gal: ^1.0.4
+  openfoodfacts: ^3.23.0
   
 
 dev_dependencies:
