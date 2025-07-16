@@ -2,7 +2,7 @@
 
 A new Flutter project.
 
-##Reconfiguring project
+## Reconfiguring project
 
 Run the following commands to download dependencies
 ```
@@ -11,7 +11,7 @@ flutter pub get
 flutter pub upgrade
 ```
 
-If running the project doesn't work, it's most likely due to the configuration
+If running the project doesn't work, it's most likely due to the configuration <br/>
 -Delete the CMakeLists.txt file
 ```
 flutter clean
@@ -20,5 +20,5 @@ flutter create .
 
 Further issues are unseen
 
-##Database Schema
+## Database Schema
 The schema can be found here on [DBDiagram](https://dbdiagram.io/d/NeraV3-Dev-2-0-669531689939893daef808c5)
