@@ -126,7 +126,8 @@ class _CameraPageState extends State<CameraPage> {
               final List<Barcode> barcodes = capture.barcodes;
               for (final barcode in barcodes) {
                 debugPrint('SCANNED: ${barcode.rawValue}');
-                // You can optionally call _onScan() here too
+                // You can optionally call _onScan() here too  
+                
               }
             },
           ),
