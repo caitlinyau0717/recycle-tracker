@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:gal/gal.dart';
@@ -82,3 +83,62 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     );
   }
 }
+
+
+
+/*
+
+
+
+import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+
+
+class QRScannerScreen extends StatefulWidget {
+  const QRScannerScreen({Key? key}) : super(key: key);
+
+  @override
+  State<QRScannerScreen> createState() => _QRScannerScreenState();
+}
+
+class _QRScannerScreenState extends State<QRScannerScreen> {
+  CameraFacing cameraFacing = CameraFacing.back;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('QR Scanner')),
+      body: Stack(
+        children: [
+          MobileScanner(
+            fit: BoxFit.cover,
+            cameraFacing: cameraFacing,
+            onDetect: (barcodeCapture) {
+              final String? code = barcodeCapture.barcodes.first.rawValue;
+              debugPrint('QR Code found! $code');
+              // handle QR scan result here
+            },
+          ),
+          Positioned(
+            bottom: 50,
+            left: 50,
+            right: 50,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  cameraFacing = cameraFacing == CameraFacing.back
+                      ? CameraFacing.front
+                      : CameraFacing.back;
+                });
+              },
+              icon: const Icon(Icons.cameraswitch),
+              label: const Text("Switch Camera"),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+*/
