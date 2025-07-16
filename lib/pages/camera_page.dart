@@ -89,61 +89,68 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     );
   }
 }
-
 */
 
 class CameraPage extends StatefulWidget {
-  const CameraPage({super.key});
-
   @override
-  State<CameraPage> createState() => _CameraPageState();
+  _CameraPageState createState() => _CameraPageState();
 }
 
 class _CameraPageState extends State<CameraPage> {
-  MobileScannerController cameraController = MobileScannerController(
-    facing: CameraFacing.back, // Default to back camera
-  );
+  final MobileScannerController _cameraController = MobileScannerController();
 
-  bool isFrontCamera = false;
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    super.dispose();
+  }
 
-  void toggleCamera() {
-    setState(() {
-      isFrontCamera = !isFrontCamera;
-      cameraController.switchCamera();
-    });
+  void _onScan() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Scanned item')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Please scan a bottle/can'),
-        backgroundColor: Colors.red.withOpacity(0.8),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(isFrontCamera ? Icons.camera_rear : Icons.camera_front),
-            onPressed: toggleCamera,
+        backgroundColor: const Color.fromARGB(255, 133, 239, 137),
+      ),
+      body: Stack(
+        children: [
+          MobileScanner(
+            controller: _cameraController,
+            onDetect: (capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              for (final barcode in barcodes) {
+                debugPrint('SCANNED: ${barcode.rawValue}');
+                // You can optionally call _onScan() here too
+              }
+            },
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 40.0),
+              child: ElevatedButton.icon(
+                onPressed: _onScan,
+                icon: const Icon(Icons.camera),
+                label: const Text('Scan'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  textStyle: const TextStyle(fontSize: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
-      body: MobileScanner(
-        controller: cameraController,
-        onDetect: (capture) {
-          final barcodes = capture.barcodes;
-          for (final barcode in barcodes) {
-            debugPrint('SCANNED: ${barcode.rawValue}');
-            // Handle scan results
-          }
-        },
-      ),
     );
-  }
-
-  @override
-  void dispose() {
-    cameraController.dispose();
-    super.dispose();
   }
 }
