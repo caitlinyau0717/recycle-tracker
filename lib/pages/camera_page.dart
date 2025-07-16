@@ -91,6 +91,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
 }
 */
 
+
 class CameraPage extends StatefulWidget {
   @override
   _CameraPageState createState() => _CameraPageState();
@@ -98,17 +99,46 @@ class CameraPage extends StatefulWidget {
 
 class _CameraPageState extends State<CameraPage> {
   final MobileScannerController _cameraController = MobileScannerController();
+  bool _isScanning = false;
+
+  void _startScan() {
+    if (_isScanning) return;
+
+    setState(() {
+      _isScanning = true;
+    });
+
+    //Timeout if nothing is scanned
+    Future.delayed(const Duration(seconds: 5), () {
+      if (_isScanning) {
+        setState(() {
+          _isScanning = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No barcode found. Please try again.')),
+        );
+      }
+    });
+  }
+
+  void _handleDetection(List<Barcode> barcodes) {
+    if (!_isScanning || barcodes.isEmpty) return;
+
+    final scanned = barcodes.first.rawValue ?? 'Unknown';
+
+    setState(() {
+      _isScanning = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Scanned item: $scanned')),
+    );
+  }
 
   @override
   void dispose() {
     _cameraController.dispose();
     super.dispose();
-  }
-
-  void _onScan() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Scanned item')),
-    );
   }
 
   @override
@@ -120,27 +150,25 @@ class _CameraPageState extends State<CameraPage> {
       ),
       body: Stack(
         children: [
+          //Always show the camera
           MobileScanner(
             controller: _cameraController,
             onDetect: (capture) {
-              final List<Barcode> barcodes = capture.barcodes;
-              for (final barcode in barcodes) {
-                debugPrint('SCANNED: ${barcode.rawValue}');
-                // You can optionally call _onScan() here too  
-                
-              }
+              _handleDetection(capture.barcodes);
             },
           ),
+
+          //Scan Button
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 40.0),
               child: ElevatedButton.icon(
-                onPressed: _onScan,
+                onPressed: _startScan,
                 icon: const Icon(Icons.camera),
-                label: const Text('Scan'),
+                label: Text(_isScanning ? 'Scanning...' : 'Scan'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: const Color.fromARGB(255, 13, 255, 0),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   textStyle: const TextStyle(fontSize: 18),
                   shape: RoundedRectangleBorder(
