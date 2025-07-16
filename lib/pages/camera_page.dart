@@ -92,10 +92,6 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
 
 */
 
-
-import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
-
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
 
