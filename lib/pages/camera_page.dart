@@ -93,34 +93,61 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
 */
 
 
-class CameraPage extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+
+class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
+
+  @override
+  State<CameraPage> createState() => _CameraPageState();
+}
+
+class _CameraPageState extends State<CameraPage> {
+  MobileScannerController cameraController = MobileScannerController(
+    facing: CameraFacing.back, // Default to back camera
+  );
+
+  bool isFrontCamera = false;
+
+  void toggleCamera() {
+    setState(() {
+      isFrontCamera = !isFrontCamera;
+      cameraController.switchCamera();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true, // ← Critical for Android
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Please scan a bottle or can'),
-        backgroundColor: Colors.red.withOpacity(0.7),
+        title: const Text('Please scan a bottle/can'),
+        backgroundColor: Colors.red.withOpacity(0.8),
         elevation: 0,
-        toolbarHeight: 80, // ← Makes the bar more visible
-      ),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: MobileScannerController(),
-            fit: BoxFit.cover, // ← Ensures full coverage
-            onDetect: (capture) {
-              final barcodes = capture.barcodes;
-              for (final barcode in barcodes) {
-                debugPrint('Scanned: ${barcode.rawValue}');
-                // Add your scan handling logic here
-              }
-            },
+        actions: [
+          IconButton(
+            icon: Icon(isFrontCamera ? Icons.camera_rear : Icons.camera_front),
+            onPressed: toggleCamera,
           ),
         ],
       ),
+      body: MobileScanner(
+        controller: cameraController,
+        onDetect: (capture) {
+          final barcodes = capture.barcodes;
+          for (final barcode in barcodes) {
+            debugPrint('SCANNED: ${barcode.rawValue}');
+            // Handle scan results
+          }
+        },
+      ),
     );
+  }
+
+  @override
+  void dispose() {
+    cameraController.dispose();
+    super.dispose();
   }
 }
