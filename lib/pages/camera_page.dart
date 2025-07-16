@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'ScanDetailPage.dart';
-
 
 class CameraPage extends StatefulWidget {
   @override
@@ -13,7 +15,7 @@ class _CameraPageState extends State<CameraPage> {
   List<CameraDescription> _cameras = [];
   int _selectedPage = 0;
   final PageController _pageController = PageController(viewportFraction: 0.45);
-
+  final ImagePicker _picker = ImagePicker();
 
   final List<String> scanModes = ['Quick Scan', 'Bulk Scan'];
 
@@ -51,11 +53,10 @@ class _CameraPageState extends State<CameraPage> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
               children: [
-                // 🔲 White background with camera clipped to center box
+                // Camera preview inside scan box
                 Positioned.fill(
                   child: Stack(
                     children: [
-                      // Camera Preview Clipped to Box
                       Align(
                         alignment: Alignment.center,
                         child: ClipRRect(
@@ -67,8 +68,6 @@ class _CameraPageState extends State<CameraPage> {
                           ),
                         ),
                       ),
-
-                      // Scan box border
                       Align(
                         alignment: Alignment.center,
                         child: Container(
@@ -84,7 +83,7 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // 🔙 Top back button
+                // Back button
                 Positioned(
                   top: 50,
                   left: 16,
@@ -102,7 +101,7 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // ↔️ Swipeable scan mode bar
+                // Scan mode switcher
                 Positioned(
                   bottom: 130,
                   left: 0,
@@ -135,8 +134,7 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // ⭕️ Shutter button
-                // Under-scan controls: $ saved - shutter - check button
+                // Bottom row with $ saved, shutter, check
                 Positioned(
                   bottom: 40,
                   left: 0,
@@ -144,7 +142,7 @@ class _CameraPageState extends State<CameraPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // 💰 $ Saved
+                      // Saved display
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
@@ -153,22 +151,40 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                         child: const Column(
                           children: [
-                            Text(
-                              '\$0.00',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            Text(
-                              'saved',
-                              style: TextStyle(fontSize: 12),
-                            ),
+                            Text('\$0.00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text('saved', style: TextStyle(fontSize: 12)),
                           ],
                         ),
                       ),
 
-                      // 📸 Shutter button
+                      // 📂 Gallery picker & barcode scanner
                       GestureDetector(
-                        onTap: () {
-                          // Take picture here
+                        onTap: () async {
+                          final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                          if (image != null) {
+                            File imageFile = File(image.path);
+                            final inputImage = InputImage.fromFile(imageFile);
+                            final barcodeScanner = BarcodeScanner();
+
+                            final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
+                            await barcodeScanner.close();
+
+                            String? barcodeValue;
+                            if (barcodes.isNotEmpty) {
+                              barcodeValue = barcodes.first.rawValue;
+                              print("📦 Barcode Scanned: $barcodeValue");
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ScanDetailPage(
+                                  imageFile: imageFile,
+                                  barcodeValue: barcodeValue,
+                                ),
+                              ),
+                            );
+                          }
                         },
                         child: Container(
                           width: 70,
@@ -178,10 +194,11 @@ class _CameraPageState extends State<CameraPage> {
                             border: Border.all(color: Colors.green, width: 4),
                             color: Colors.grey[300],
                           ),
+                          child: const Icon(Icons.image, size: 30),
                         ),
                       ),
 
-                      // ✅ Check Button
+                      // ✅ Manual check
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -198,14 +215,13 @@ class _CameraPageState extends State<CameraPage> {
                           child: const Icon(Icons.check, color: Colors.green, size: 28),
                         ),
                       ),
-
                     ],
                   ),
                 ),
               ],
             ),
 
-      // ✅ Bottom green footer
+      // Bottom footer
       bottomNavigationBar: Container(
         color: const Color(0xFFD5EFCD),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
@@ -216,14 +232,11 @@ class _CameraPageState extends State<CameraPage> {
               radius: 25,
               backgroundImage: AssetImage('assets/profile.jpg'),
             ),
-            Image.asset(
-              'assets/logo.png',
-              height: 40,
-            ),
+            Image.asset('assets/logo.png', height: 40),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
               onPressed: () {
-                // Already on camera screen
+                // Already here
               },
             ),
           ],
