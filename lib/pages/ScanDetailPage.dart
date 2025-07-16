@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 class ScanDetailPage extends StatelessWidget {
-  const ScanDetailPage({super.key});
+  final File? imageFile;
+  final String? barcodeValue;
+
+  const ScanDetailPage({super.key, this.imageFile, this.barcodeValue});
 
   @override
   Widget build(BuildContext context) {
@@ -9,7 +13,7 @@ class ScanDetailPage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Top Bar with Back Button and Title
+          // Top Bar
           Container(
             color: const Color(0xFFD5EFCD),
             padding: const EdgeInsets.only(top: 50, bottom: 15, left: 16, right: 16),
@@ -22,11 +26,7 @@ class ScanDetailPage extends StatelessWidget {
                 const SizedBox(width: 10),
                 const Text(
                   'Details',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
                 ),
               ],
             ),
@@ -34,7 +34,28 @@ class ScanDetailPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Item List
+          // Show image if available
+          if (imageFile != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(imageFile!, height: 200, fit: BoxFit.cover),
+              ),
+            ),
+
+          // Show barcode result
+          if (barcodeValue != null)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                '📦 Scanned Barcode: $barcodeValue',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ),
+
+          const SizedBox(height: 16),
+
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -47,7 +68,7 @@ class ScanDetailPage extends StatelessWidget {
             ),
           ),
 
-          // Total and Done Button
+          // Bottom Row
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -81,7 +102,7 @@ class ScanDetailPage extends StatelessWidget {
         ],
       ),
 
-      // Bottom Footer
+      // Bottom nav
       bottomNavigationBar: Container(
         color: const Color(0xFFD5EFCD),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
@@ -92,15 +113,10 @@ class ScanDetailPage extends StatelessWidget {
               radius: 25,
               backgroundImage: AssetImage('assets/profile.jpg'),
             ),
-            Image.asset(
-              'assets/logo.png',
-              height: 40,
-            ),
+            Image.asset('assets/logo.png', height: 40),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
@@ -115,24 +131,13 @@ class ScanDetailPage extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: Text(
-                name,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-            ),
+            Expanded(child: Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500))),
             if (count > 1)
-              Text(
-                'x$count',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
+              Text('x$count', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          price,
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
-        ),
+        Text(price, style: const TextStyle(fontSize: 14, color: Colors.black87)),
         const Divider(color: Colors.green),
       ],
     );
