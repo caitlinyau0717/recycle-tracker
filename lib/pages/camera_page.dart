@@ -2,7 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:gal/gal.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
+
+/*
 class CameraPage extends StatefulWidget {
   @override
   _CameraPageState createState() => _CameraPageState();
@@ -87,61 +90,37 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   }
 }
 
+*/
 
 
-/*
-
-
-
-import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
-
-
-class QRScannerScreen extends StatefulWidget {
-  const QRScannerScreen({Key? key}) : super(key: key);
-
-  @override
-  State<QRScannerScreen> createState() => _QRScannerScreenState();
-}
-
-class _QRScannerScreenState extends State<QRScannerScreen> {
-  CameraFacing cameraFacing = CameraFacing.back;
+class CameraPage extends StatelessWidget {
+  const CameraPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('QR Scanner')),
+      extendBodyBehindAppBar: true, // ← Critical for Android
+      appBar: AppBar(
+        title: const Text('Please scan a bottle or can'),
+        backgroundColor: Colors.red.withOpacity(0.7),
+        elevation: 0,
+        toolbarHeight: 80, // ← Makes the bar more visible
+      ),
       body: Stack(
         children: [
           MobileScanner(
-            fit: BoxFit.cover,
-            cameraFacing: cameraFacing,
-            onDetect: (barcodeCapture) {
-              final String? code = barcodeCapture.barcodes.first.rawValue;
-              debugPrint('QR Code found! $code');
-              // handle QR scan result here
+            controller: MobileScannerController(),
+            fit: BoxFit.cover, // ← Ensures full coverage
+            onDetect: (capture) {
+              final barcodes = capture.barcodes;
+              for (final barcode in barcodes) {
+                debugPrint('Scanned: ${barcode.rawValue}');
+                // Add your scan handling logic here
+              }
             },
-          ),
-          Positioned(
-            bottom: 50,
-            left: 50,
-            right: 50,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  cameraFacing = cameraFacing == CameraFacing.back
-                      ? CameraFacing.front
-                      : CameraFacing.back;
-                });
-              },
-              icon: const Icon(Icons.cameraswitch),
-              label: const Text("Switch Camera"),
-            ),
           ),
         ],
       ),
     );
   }
 }
-
-*/
