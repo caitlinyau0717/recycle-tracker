@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+import 'package:gal/gal.dart';
 import 'ScanDetailPage.dart';
 
 class CameraPage extends StatefulWidget {
@@ -13,9 +14,9 @@ class CameraPage extends StatefulWidget {
 class _CameraPageState extends State<CameraPage> {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
-  int _selectedPage = 0;
   final PageController _pageController = PageController(viewportFraction: 0.45);
   final ImagePicker _picker = ImagePicker();
+  int _selectedPage = 0;
 
   final List<String> scanModes = ['Quick Scan', 'Bulk Scan'];
 
@@ -39,6 +40,69 @@ class _CameraPageState extends State<CameraPage> {
     _controller?.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _captureAndSaveAndScan() async {
+    try {
+      final XFile image = await _controller!.takePicture();
+
+      // ✅ Save to gallery using gal
+      await Gal.putImage(image.path);
+      print('✅ Saved to gallery: ${image.path}');
+
+      // 🔍 Scan barcode from captured image
+      File imageFile = File(image.path);
+      final inputImage = InputImage.fromFile(imageFile);
+      final barcodeScanner = BarcodeScanner();
+      final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
+      await barcodeScanner.close();
+
+      String? barcodeValue;
+      if (barcodes.isNotEmpty) {
+        barcodeValue = barcodes.first.rawValue;
+        print("📦 Barcode from camera: $barcodeValue");
+      }
+
+      // 📂 Now open gallery picker for more selection
+      final XFile? pickedImage = await _picker.pickImage(source: ImageSource.gallery);
+      if (pickedImage != null) {
+        File pickedFile = File(pickedImage.path);
+        final pickedInput = InputImage.fromFile(pickedFile);
+        final pickedScanner = BarcodeScanner();
+        final List<Barcode> pickedBarcodes = await pickedScanner.processImage(pickedInput);
+
+        String? pickedValue;
+        if (pickedBarcodes.isNotEmpty) {
+          pickedValue = pickedBarcodes.first.rawValue;
+          print("📦 Barcode from gallery: $pickedValue");
+        }
+
+        await pickedScanner.close();
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ScanDetailPage(
+              imageFile: pickedFile,
+              barcodeValue: pickedValue ?? barcodeValue,
+            ),
+          ),
+        );
+      } else {
+        // If no gallery image picked, just show the captured image
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ScanDetailPage(
+              imageFile: imageFile,
+              barcodeValue: barcodeValue,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error during capture/save/scan: $e');
+    }
   }
 
   @override
@@ -83,7 +147,7 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // Back button
+                // Top back button
                 Positioned(
                   top: 50,
                   left: 16,
@@ -101,7 +165,7 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // Scan mode switcher
+                // Swipeable scan mode bar
                 Positioned(
                   bottom: 130,
                   left: 0,
@@ -134,7 +198,7 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // Bottom row with $ saved, shutter, check
+                // Under-scan controls: $ saved - shutter - check button
                 Positioned(
                   bottom: 40,
                   left: 0,
@@ -142,7 +206,6 @@ class _CameraPageState extends State<CameraPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Saved display
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
@@ -157,35 +220,9 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                       ),
 
-                      // 📂 Gallery picker & barcode scanner
+                      // 📸 Shutter button (save + gallery)
                       GestureDetector(
-                        onTap: () async {
-                          final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                          if (image != null) {
-                            File imageFile = File(image.path);
-                            final inputImage = InputImage.fromFile(imageFile);
-                            final barcodeScanner = BarcodeScanner();
-
-                            final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
-                            await barcodeScanner.close();
-
-                            String? barcodeValue;
-                            if (barcodes.isNotEmpty) {
-                              barcodeValue = barcodes.first.rawValue;
-                              print("📦 Barcode Scanned: $barcodeValue");
-                            }
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ScanDetailPage(
-                                  imageFile: imageFile,
-                                  barcodeValue: barcodeValue,
-                                ),
-                              ),
-                            );
-                          }
-                        },
+                        onTap: _captureAndSaveAndScan,
                         child: Container(
                           width: 70,
                           height: 70,
@@ -194,11 +231,11 @@ class _CameraPageState extends State<CameraPage> {
                             border: Border.all(color: Colors.green, width: 4),
                             color: Colors.grey[300],
                           ),
-                          child: const Icon(Icons.image, size: 30),
+                          child: const Icon(Icons.camera_alt, size: 30),
                         ),
                       ),
 
-                      // ✅ Manual check
+                      // ✅ Check Button
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -230,13 +267,13 @@ class _CameraPageState extends State<CameraPage> {
           children: [
             const CircleAvatar(
               radius: 25,
-              backgroundImage: AssetImage('assets/profile.jpg'),
+              backgroundImage: AssetImage('assets/ProfilePic.png'),
             ),
             Image.asset('assets/logo.png', height: 40),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
               onPressed: () {
-                // Already here
+                // Already on camera screen
               },
             ),
           ],
