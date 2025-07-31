@@ -1,108 +1,64 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
-import 'package:gal/gal.dart';
-import 'ScanDetailPage.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:openfoodfacts/openfoodfacts.dart';
 
 class CameraPage extends StatefulWidget {
+  const CameraPage({Key? key}) : super(key: key);
+
   @override
-  _CameraPageState createState() => _CameraPageState();
+  CameraPageState createState() => CameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> {
-  CameraController? _controller;
-  List<CameraDescription> _cameras = [];
+class CameraPageState extends State<CameraPage> {
+  final MobileScannerController _scannerController = MobileScannerController();
   final PageController _pageController = PageController(viewportFraction: 0.45);
-  final ImagePicker _picker = ImagePicker();
-  int _selectedPage = 0;
 
   final List<String> scanModes = ['Quick Scan', 'Bulk Scan'];
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeCamera();
-  }
-
-  Future<void> _initializeCamera() async {
-    _cameras = await availableCameras();
-    if (_cameras.isNotEmpty) {
-      _controller = CameraController(_cameras.first, ResolutionPreset.high);
-      await _controller!.initialize();
-      if (mounted) setState(() {});
-    }
-  }
+  int _selectedPage = 0;
+  bool _isScanning = false;
+  String? _lastScanned;
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _scannerController.dispose();
     _pageController.dispose();
     super.dispose();
   }
 
-  Future<void> _captureAndSaveAndScan() async {
-    try {
-      final XFile image = await _controller!.takePicture();
+  void _handleBarcodeDetection(List<Barcode> barcodes) {
+    if (_isScanning || barcodes.isEmpty) return;
 
-      // ✅ Save to gallery using gal
-      await Gal.putImage(image.path);
-      print('✅ Saved to gallery: ${image.path}');
+    final code = barcodes.first.rawValue;
+    if (code == null || code == _lastScanned) return;
 
-      // 🔍 Scan barcode from captured image
-      File imageFile = File(image.path);
-      final inputImage = InputImage.fromFile(imageFile);
-      final barcodeScanner = BarcodeScanner();
-      final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
-      await barcodeScanner.close();
+    _lastScanned = code;
+    _isScanning = true;
 
-      String? barcodeValue;
-      if (barcodes.isNotEmpty) {
-        barcodeValue = barcodes.first.rawValue;
-        print("📦 Barcode from camera: $barcodeValue");
-      }
+    fetchProductInfo(code, context).then((_) {
+      Future.delayed(const Duration(seconds: 3), () {
+        _isScanning = false;
+      });
+    });
+  }
 
-      // 📂 Now open gallery picker for more selection
-      final XFile? pickedImage = await _picker.pickImage(source: ImageSource.gallery);
-      if (pickedImage != null) {
-        File pickedFile = File(pickedImage.path);
-        final pickedInput = InputImage.fromFile(pickedFile);
-        final pickedScanner = BarcodeScanner();
-        final List<Barcode> pickedBarcodes = await pickedScanner.processImage(pickedInput);
+  Future<void> fetchProductInfo(String barcode, BuildContext context) async {
+    OpenFoodAPIConfiguration.userAgent = UserAgent(
+      name: 'MyScannerApp',
+      url: 'https://example.com',
+    );
 
-        String? pickedValue;
-        if (pickedBarcodes.isNotEmpty) {
-          pickedValue = pickedBarcodes.first.rawValue;
-          print("📦 Barcode from gallery: $pickedValue");
-        }
+    final config = ProductQueryConfiguration(
+      barcode,
+      version: ProductQueryVersion.v3,
+    );
 
-        await pickedScanner.close();
+    final result = await OpenFoodAPIClient.getProductV3(config);
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ScanDetailPage(
-              imageFile: pickedFile,
-              barcodeValue: pickedValue ?? barcodeValue,
-            ),
-          ),
-        );
-      } else {
-        // If no gallery image picked, just show the captured image
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ScanDetailPage(
-              imageFile: imageFile,
-              barcodeValue: barcodeValue,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      print('❌ Error during capture/save/scan: $e');
-    }
+    final name = result.product?.productName ?? 'Product not found';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Product: $name')),
+    );
   }
 
   @override
@@ -113,152 +69,156 @@ class _CameraPageState extends State<CameraPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: _controller == null || !_controller!.value.isInitialized
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
+      body: Stack(
+        children: [
+          // Live camera with barcode scanner
+          Positioned.fill(
+            child: Stack(
               children: [
-                // Camera preview inside scan box
-                Positioned.fill(
-                  child: Stack(
-                    children: [
-                      Align(
-                        alignment: Alignment.center,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: SizedBox(
-                            width: scanBoxWidth,
-                            height: scanBoxHeight,
-                            child: CameraPreview(_controller!),
-                          ),
-                        ),
+                Align(
+                  alignment: Alignment.center,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      width: scanBoxWidth,
+                      height: scanBoxHeight,
+                      child: MobileScanner(
+                        controller: _scannerController,
+                        allowDuplicates: false,
+                        onDetect: (capture) {
+                          _handleBarcodeDetection(capture.barcodes);
+                        },
                       ),
-                      Align(
-                        alignment: Alignment.center,
-                        child: Container(
-                          width: scanBoxWidth,
-                          height: scanBoxHeight,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black, width: 2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Top back button
-                Positioned(
-                  top: 50,
-                  left: 16,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        'home',
-                        style: TextStyle(color: Colors.black, fontSize: 18),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Swipeable scan mode bar
-                Positioned(
-                  bottom: 130,
-                  left: 0,
-                  right: 0,
-                  child: SizedBox(
-                    height: 40,
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: scanModes.length,
-                      onPageChanged: (index) {
-                        setState(() => _selectedPage = index);
-                      },
-                      physics: const BouncingScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        return Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              scanModes[index],
-                              style: const TextStyle(color: Colors.white, fontSize: 16),
-                            ),
-                          ),
-                        );
-                      },
                     ),
                   ),
                 ),
-
-                // Under-scan controls: $ saved - shutter - check button
-                Positioned(
-                  bottom: 40,
-                  left: 0,
-                  right: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.green),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Column(
-                          children: [
-                            Text('\$0.00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text('saved', style: TextStyle(fontSize: 12)),
-                          ],
-                        ),
-                      ),
-
-                      // 📸 Shutter button (save + gallery)
-                      GestureDetector(
-                        onTap: _captureAndSaveAndScan,
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.green, width: 4),
-                            color: Colors.grey[300],
-                          ),
-                          child: const Icon(Icons.camera_alt, size: 30),
-                        ),
-                      ),
-
-                      // ✅ Check Button
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ScanDetailPage()),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.green),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.check, color: Colors.green, size: 28),
-                        ),
-                      ),
-                    ],
+                Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: scanBoxWidth,
+                    height: scanBoxHeight,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black, width: 2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ],
             ),
+          ),
 
-      // Bottom footer
+          // Back button
+          Positioned(
+            top: 50,
+            left: 16,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Text(
+                  'home',
+                  style: TextStyle(color: Colors.black, fontSize: 18),
+                ),
+              ],
+            ),
+          ),
+
+          // Scan mode selector
+          Positioned(
+            bottom: 130,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: 40,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: scanModes.length,
+                onPageChanged: (index) {
+                  setState(() => _selectedPage = index);
+                },
+                physics: const BouncingScrollPhysics(),
+                itemBuilder: (context, index) {
+                  return Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        scanModes[index],
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
+          // Bottom scan status + action buttons
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.green),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Column(
+                    children: [
+                      Text('\$0.00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('saved', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isScanning = true;
+                    });
+                    // You could also trigger a manual scan timeout here if needed
+                  },
+                  child: Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.green, width: 4),
+                      color: Colors.grey[300],
+                    ),
+                    child: const Icon(Icons.camera_alt, size: 30),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Manually confirmed scan.')),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.green),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.check, color: Colors.green, size: 28),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+
+      // Bottom navigation bar
       bottomNavigationBar: Container(
         color: const Color(0xFFD5EFCD),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
