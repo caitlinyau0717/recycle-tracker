@@ -84,7 +84,7 @@ class CameraPageState extends State<CameraPage> {
                       height: scanBoxHeight,
                       child: MobileScanner(
                         controller: _scannerController,
-                        allowDuplicates: false,
+                        //allowDuplicates: false,
                         onDetect: (capture) {
                           _handleBarcodeDetection(capture.barcodes);
                         },
