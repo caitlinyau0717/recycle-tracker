@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'edit_profile_page.dart';
 import 'camera_page.dart';
-import 'home.dart'; // Corrected from 'home.dart'
+import 'home.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,7 +11,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // I've re-added the state variables from the previous version
   bool _notificationsEnabled = true;
   bool _showAchievementDetail = false;
 
@@ -32,7 +31,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: const Row(
                   children: [
                     Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
-                    // Corrected text to match mockup
                     Text('home', style: TextStyle(color: Colors.black54, fontSize: 16)),
                   ],
                 ),
@@ -40,23 +38,23 @@ class _ProfilePageState extends State<ProfilePage> {
               const Spacer(),
               const Text('Your Profile', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
               const Spacer(),
-              const SizedBox(width: 60), // To balance the title
+              const SizedBox(width: 60),
             ],
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0), // Adjusted padding for consistency
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // This is the main section for the profile header
+            // Main section for the profile header
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // profile icon
                 const CircleAvatar(
-                  radius: 60, // Adjusted radius to better match mockup
+                  radius: 60,
                   backgroundImage: AssetImage('assets/ProfilePic.png'),
                 ),
                 const SizedBox(width: 20),
@@ -68,9 +66,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     const Text(
                       'Johnny Doe',
                       style: TextStyle(
-                        fontSize: 28, // Adjusted font size to match mockup
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        height: 1.2, // Reduces the space below the text
+                        height: 1.2,
                       ),
                     ),
                     TextButton(
@@ -81,7 +79,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         );
                       },
                       style: TextButton.styleFrom(
-                        // This is the key property to make the button tighter
+                        // makes button tighter
                         visualDensity: const VisualDensity(vertical: -4),
                         padding: EdgeInsets.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -93,7 +91,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 30), // Increased space before the next section
+            const SizedBox(height: 30),
             
             // achievements
             _buildSection(
@@ -159,10 +157,11 @@ class _ProfilePageState extends State<ProfilePage> {
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  MaterialPageRoute(builder: (context) => HomePage()),
                   (Route<dynamic> route) => false,
                 );
               },
+              // CHRIS: PROFILE PIC GOES HERE
               child: Image.asset('assets/logo.png', height: 40),
             ),
             IconButton(
@@ -180,7 +179,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Helper methods for building sections (re-added from previous version)
+  // Helper methods for building sections
   Widget _buildSection({required String title, required Widget child, bool showBorder = true}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,9 +202,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+// CHRIS: STORED ACHIEVEMENTS GO IMAGES HERE
   Widget _buildAchievementGrid() {
     return SizedBox(
-      height: 150, // sets the fixed height for the content inside the box.
+      height: 150,
       child: Wrap(
         spacing: 16.0, // Horizontal space between icons.
         runSpacing: 16.0, // Vertical space if icons wrap to the next line.
@@ -224,10 +224,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+// CHRIS: STORED ACHIEVEMENT DETAILS GO HERE
   Widget _buildAchievementDetail() {
-    // It now has the same fixed height to prevent the box from resizing.
     return SizedBox(
-      height: 150, // Same height as the grid view.
+      height: 150,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -238,7 +238,7 @@ class _ProfilePageState extends State<ProfilePage> {
               });
             },
             child: const Row(
-              mainAxisSize: MainAxisSize.min, // Keep the back button compact
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.arrow_back_ios, size: 12),
                 Text('back'),
