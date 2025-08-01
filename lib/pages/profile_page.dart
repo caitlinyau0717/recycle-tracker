@@ -53,6 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // profile icon
+                // CHRIS: PROFILE PIC GOES HERE
                 const CircleAvatar(
                   radius: 60,
                   backgroundImage: AssetImage('assets/ProfilePic.png'),
@@ -63,6 +64,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // CHRIS: USER'S FULL NAME GOES HERE
                     const Text(
                       'Johnny Doe',
                       style: TextStyle(
@@ -111,6 +113,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   const Text('Enable Notifications', style: TextStyle(fontSize: 16.0),),
                   Switch(
+                    // CHRIS: USER'S NOTIFICATION SETTINGS ARE HERE
                     value: _notificationsEnabled,
                     onChanged: (value) {
                       setState(() {
@@ -127,6 +130,7 @@ class _ProfilePageState extends State<ProfilePage> {
               title: 'State',
               showBorder: false,
               child: Row(
+                // CHRIS: STATE INFORMATION AND IMAGE GOES HERE
                 children: [
                   Image.asset('assets/NYState.png', width: 160, height: 160),
                   const SizedBox(width: 10),
@@ -151,6 +155,7 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             const CircleAvatar(
               radius: 25,
+              // CHRIS: PROFILE PIC GOES HERE
               backgroundImage: AssetImage('assets/ProfilePic.png'),
             ),
             GestureDetector(
@@ -161,7 +166,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   (Route<dynamic> route) => false,
                 );
               },
-              // CHRIS: PROFILE PIC GOES HERE
               child: Image.asset('assets/logo.png', height: 40),
             ),
             IconButton(
