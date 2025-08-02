@@ -27,7 +27,7 @@ class EditProfilePage extends StatelessWidget {
               const Spacer(),
               const Text('Edit Profile', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
               const Spacer(),
-              const SizedBox(width: 60), // To balance the title
+              const SizedBox(width: 60),
             ],
           ),
         ),
@@ -40,18 +40,21 @@ class EditProfilePage extends StatelessWidget {
             const SizedBox(height: 10),
             const CircleAvatar(
               radius: 50,
+              // CHRIS: PROFILE PIC GOES HERE
               backgroundImage: AssetImage('assets/ProfilePic.png'),
             ),
             TextButton(
-              onPressed: () { /* Add logic to change photo */ },
+              // CHRIS: IM ASSUMING CODE TO CHANGE PROFILE PIC HAS TO DO WITH THE DATABASE
+              onPressed: () { /* CODE TO CHANGE PROFILE PIC WILL GO HERE */ },
               child: const Text('select to change'),
             ),
             const SizedBox(height: 20),
             
+            // CHRIS: USERNAME, PASSWORD, AND NAME GO HERE | USERS CAN CHANGE THEIR INFO HERE
             // Form Fields
             _buildTextField(label: 'Username', initialValue: 'johnnydoe15'),
             const SizedBox(height: 16),
-            _buildTextField(label: 'Password', initialValue: '**********', obscureText: true),
+            _buildTextField(label: 'Password', initialValue: 'password', obscureText: true),
             const SizedBox(height: 16),
             _buildTextField(label: 'Name', initialValue: 'Johnny Doe'),
             const SizedBox(height: 40),
@@ -61,7 +64,7 @@ class EditProfilePage extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // Add submission logic here
+                  // CHRIS: DATABASE INFORMATION SHOULD UPDATE TO INFORMATION ON CLICK HERE
                   Navigator.pop(context); // Go back to profile page
                 },
                 style: ElevatedButton.styleFrom(

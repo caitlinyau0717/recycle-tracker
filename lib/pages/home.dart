@@ -4,8 +4,19 @@ import 'camera_page.dart';
 import 'profile_page.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  HomePage({super.key});
 
+  // CHRIS: MONTHLY BAR CHART DATA GOES HERE
+  final List<double> monthlyData = [
+    5.0, 6.2, 7.1, 4.8, 8.0, 6.9, 7.5, 5.7, 6.8, 7.2, 5.9, 6.4,
+  ];
+
+  final List<String> monthLabels = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  // CHRIS: DATA FOR PIE CHART GOES HERE
   @override
   Widget build(BuildContext context) {
     // Define the data for your pie chart sections
@@ -178,11 +189,11 @@ class HomePage extends StatelessWidget {
                             sideTitles: SideTitles(
                               showTitles: true,
                               getTitlesWidget: (value, meta) {
-                                const months = [
-                                  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                                ];
-                                return Text(months[value.toInt() % 12]);
+                                if (value.toInt() >= 0 && value.toInt() < monthLabels.length) {
+                                  return Text(monthLabels[value.toInt()], style: TextStyle(fontSize: 10));
+                                } else {
+                                  return const Text('');
+                                }
                               },
                             ),
                           ),
@@ -192,12 +203,12 @@ class HomePage extends StatelessWidget {
                           topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
-                        barGroups: List.generate(12, (index) {
+                        barGroups: List.generate(monthlyData.length, (index) {
                           return BarChartGroupData(
                             x: index,
                             barRods: [
                               BarChartRodData(
-                                toY: (index % 4 + 4).toDouble(),
+                                toY: monthlyData[index],
                                 color: Colors.green.shade800,
                                 width: 16,
                                 borderRadius: BorderRadius.circular(4),
@@ -235,6 +246,7 @@ class HomePage extends StatelessWidget {
               },
               child: CircleAvatar(
                 radius: 25,
+                // CHRIS: PROFILE PIC GOES HERE
                 backgroundImage: AssetImage('assets/ProfilePic.png'),
               ),
             ),
