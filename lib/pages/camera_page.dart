@@ -153,13 +153,14 @@ class _CameraPageState extends State<CameraPage> {
                   left: 16,
                   child: Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        'home',
-                        style: TextStyle(color: Colors.black, fontSize: 18),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
+                            Text('home', style: TextStyle(color: Colors.black54, fontSize: 16)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
