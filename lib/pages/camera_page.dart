@@ -58,8 +58,23 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Future<void> _submitSessionPhotos() async {
-    if (_sessionPhotos.isEmpty) return;
-
+    if (_sessionPhotos.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("No Photos Taken"),
+          content: const Text("Please take at least one photo before submitting."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
     final File lastImage = _sessionPhotos.last;
     final inputImage = InputImage.fromFile(lastImage);
 
@@ -204,7 +219,14 @@ class _CameraPageState extends State<CameraPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => SessionGalleryPage(images: _sessionPhotos),
+                              builder: (context) => SessionGalleryPage(
+                                images: _sessionPhotos,
+                                onDelete: (File image) {
+                                  setState(() {
+                                    _sessionPhotos.remove(image);
+                                  });
+                                },
+                              ),
                             ),
                           );
                         },
@@ -233,7 +255,7 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                       ),
 
-                      // ✅ Submit button (right)
+                      // Submit button (right)
                       GestureDetector(
                         onTap: _submitSessionPhotos,
                         child: Container(
