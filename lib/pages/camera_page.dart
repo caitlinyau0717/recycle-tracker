@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'package:gal/gal.dart';
 import 'ScanDetailPage.dart';
+import 'profile_page.dart';
+import 'home.dart';
 
 class CameraPage extends StatefulWidget {
   @override
@@ -154,7 +156,13 @@ class _CameraPageState extends State<CameraPage> {
                   child: Row(
                     children: [
                       GestureDetector(
-                        onTap: () => Navigator.pop(context),
+                        onTap: () {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (context) => HomePage()),
+                            (Route<dynamic> route) => false,
+                          );
+                        },
                         child: const Row(
                           children: [
                             Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
@@ -283,11 +291,29 @@ class _CameraPageState extends State<CameraPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const CircleAvatar(
-              radius: 25,
-              backgroundImage: AssetImage('assets/ProfilePic.png'),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 25,
+                // CHRIS: PROFILE PIC GOES HERE
+                backgroundImage: AssetImage('assets/ProfilePic.png'),
+              ),
             ),
-            Image.asset('assets/logo.png', height: 40),
+            GestureDetector(
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+              child: Image.asset('assets/logo.png', height: 40),
+            ),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
               onPressed: () {
