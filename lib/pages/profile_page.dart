@@ -27,7 +27,13 @@ class _ProfilePageState extends State<ProfilePage> {
           title: Row(
             children: [
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomePage()),
+                    (Route<dynamic> route) => false,
+                  );
+                },
                 child: const Row(
                   children: [
                     Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
