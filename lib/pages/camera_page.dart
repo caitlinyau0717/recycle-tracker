@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
-import 'package:recycletracker/pages/ScanDetailPage.dart';
-import 'package:recycletracker/pages/session_gallery_page.dart';
+import 'ScanDetailPage.dart';
+import 'session_gallery_page.dart';
 
 class CameraPage extends StatefulWidget {
   @override
