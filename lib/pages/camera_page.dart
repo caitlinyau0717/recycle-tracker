@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
-import 'package:gal/gal.dart';
-import 'ScanDetailPage.dart';
+import 'package:recycletracker/pages/ScanDetailPage.dart';
+import 'package:recycletracker/pages/session_gallery_page.dart';
 
 class CameraPage extends StatefulWidget {
   @override
@@ -17,6 +17,8 @@ class _CameraPageState extends State<CameraPage> {
   final PageController _pageController = PageController(viewportFraction: 0.30);
   final ImagePicker _picker = ImagePicker();
   int _selectedPage = 0;
+
+  List<File> _sessionPhotos = [];
 
   final List<String> scanModes = ['Quick Scan', 'Bulk Scan'];
 
@@ -45,64 +47,40 @@ class _CameraPageState extends State<CameraPage> {
   Future<void> _captureAndSaveAndScan() async {
     try {
       final XFile image = await _controller!.takePicture();
-
-      // Save to gallery using gal
-      await Gal.putImage(image.path);
-      print('Saved to gallery: ${image.path}');
-
-      // Scan barcode from captured image
       File imageFile = File(image.path);
-      final inputImage = InputImage.fromFile(imageFile);
-      final barcodeScanner = BarcodeScanner();
-      final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
-      await barcodeScanner.close();
 
-      String? barcodeValue;
-      if (barcodes.isNotEmpty) {
-        barcodeValue = barcodes.first.rawValue;
-        print("Barcode from camera: $barcodeValue");
-      }
-
-      // Open gallery picker for more selection
-      final XFile? pickedImage = await _picker.pickImage(source: ImageSource.gallery);
-      if (pickedImage != null) {
-        File pickedFile = File(pickedImage.path);
-        final pickedInput = InputImage.fromFile(pickedFile);
-        final pickedScanner = BarcodeScanner();
-        final List<Barcode> pickedBarcodes = await pickedScanner.processImage(pickedInput);
-
-        String? pickedValue;
-        if (pickedBarcodes.isNotEmpty) {
-          pickedValue = pickedBarcodes.first.rawValue;
-          print("Barcode from gallery: $pickedValue");
-        }
-
-        await pickedScanner.close();
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ScanDetailPage(
-              imageFile: pickedFile,
-              barcodeValue: pickedValue ?? barcodeValue,
-            ),
-          ),
-        );
-      } else {
-        // If no gallery image picked, just show the captured image
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ScanDetailPage(
-              imageFile: imageFile,
-              barcodeValue: barcodeValue,
-            ),
-          ),
-        );
-      }
+      setState(() {
+        _sessionPhotos.add(imageFile); // Save image to session memory
+      });
     } catch (e) {
-      print('Error during capture/save/scan: $e');
+      print('Error during capture/save: $e');
     }
+  }
+
+  Future<void> _submitSessionPhotos() async {
+    if (_sessionPhotos.isEmpty) return;
+
+    final File lastImage = _sessionPhotos.last;
+    final inputImage = InputImage.fromFile(lastImage);
+
+    final barcodeScanner = BarcodeScanner();
+    final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
+    await barcodeScanner.close();
+
+    String? barcodeValue;
+    if (barcodes.isNotEmpty) {
+      barcodeValue = barcodes.first.rawValue;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ScanDetailPage(
+          imageFile: lastImage,
+          barcodeValue: barcodeValue,
+        ),
+      ),
+    );
   }
 
   @override
@@ -151,18 +129,14 @@ class _CameraPageState extends State<CameraPage> {
                 Positioned(
                   top: 50,
                   left: 16,
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
-                            Text('home', style: TextStyle(color: Colors.black54, fontSize: 16)),
-                          ],
-                        ),
-                      ),
-                    ],
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
+                        Text('home', style: TextStyle(color: Colors.black54, fontSize: 16)),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -209,14 +183,14 @@ class _CameraPageState extends State<CameraPage> {
                                 style: const TextStyle(color: Colors.white, fontSize: 16),
                               ),
                             ),
-                          )
+                          ),
                         );
                       },
                     ),
                   ),
                 ),
 
-                // Under-scan controls: $ saved - shutter - check button
+                // ✅ Under-scan controls: Gallery - Shutter - Submit
                 Positioned(
                   bottom: 40,
                   left: 0,
@@ -224,21 +198,27 @@ class _CameraPageState extends State<CameraPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.green),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Column(
-                          children: [
-                            Text('\$0.00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text('saved', style: TextStyle(fontSize: 12)),
-                          ],
+                      // 📂 Session Gallery Button (left)
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SessionGalleryPage(images: _sessionPhotos),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.green),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.photo_library, color: Colors.green, size: 28),
                         ),
                       ),
 
-                      // 📸 Shutter button (save + gallery)
+                      // 📸 Shutter button (center)
                       GestureDetector(
                         onTap: _captureAndSaveAndScan,
                         child: Container(
@@ -253,21 +233,29 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                       ),
 
-                      // Check Button
+                      // ✅ Submit button (right)
                       GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ScanDetailPage()),
-                          );
-                        },
+                        onTap: _submitSessionPhotos,
                         child: Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.green),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.check, color: Colors.green, size: 28),
+                          child: Row(
+                            children: const [
+                              Text(
+                                "Submit",
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              SizedBox(width: 6),
+                              Icon(Icons.check_circle, color: Colors.green, size: 24),
+                            ],
+                          ),
                         ),
                       ),
                     ],
