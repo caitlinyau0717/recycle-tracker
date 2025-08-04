@@ -99,7 +99,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Chris: State
+                  // Chris: Input State
                   const Text("State:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
