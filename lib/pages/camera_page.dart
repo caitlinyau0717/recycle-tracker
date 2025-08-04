@@ -60,28 +60,35 @@ class _CameraPageState extends State<CameraPage> {
   Future<void> _submitSessionPhotos() async {
     if (_sessionPhotos.isEmpty) return;
 
-    final File lastImage = _sessionPhotos.last;
-    final inputImage = InputImage.fromFile(lastImage);
+    List<String> scannedBarcodes = [];
 
     final barcodeScanner = BarcodeScanner();
-    final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
-    await barcodeScanner.close();
 
-    String? barcodeValue;
-    if (barcodes.isNotEmpty) {
-      barcodeValue = barcodes.first.rawValue;
+    // 🔁 Loop through all session images and scan each one
+    for (final image in _sessionPhotos) {
+      final inputImage = InputImage.fromFile(image);
+      final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
+      if (barcodes.isNotEmpty) {
+        scannedBarcodes.add(barcodes.first.rawValue ?? 'Unknown');
+      } else {
+        scannedBarcodes.add('No barcode found');
+      }
     }
 
+    await barcodeScanner.close();
+
+    // ✅ Navigate to ScanDetailPage with all images + barcode values
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ScanDetailPage(
-          imageFile: lastImage,
-          barcodeValue: barcodeValue,
+          images: _sessionPhotos,
+          barcodeValues: scannedBarcodes,
         ),
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
