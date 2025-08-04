@@ -14,7 +14,7 @@ class CameraPage extends StatefulWidget {
 class _CameraPageState extends State<CameraPage> {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
-  final PageController _pageController = PageController(viewportFraction: 0.45);
+  final PageController _pageController = PageController(viewportFraction: 0.30);
   final ImagePicker _picker = ImagePicker();
   int _selectedPage = 0;
 
@@ -46,11 +46,11 @@ class _CameraPageState extends State<CameraPage> {
     try {
       final XFile image = await _controller!.takePicture();
 
-      // ✅ Save to gallery using gal
+      // Save to gallery using gal
       await Gal.putImage(image.path);
-      print('✅ Saved to gallery: ${image.path}');
+      print('Saved to gallery: ${image.path}');
 
-      // 🔍 Scan barcode from captured image
+      // Scan barcode from captured image
       File imageFile = File(image.path);
       final inputImage = InputImage.fromFile(imageFile);
       final barcodeScanner = BarcodeScanner();
@@ -60,10 +60,10 @@ class _CameraPageState extends State<CameraPage> {
       String? barcodeValue;
       if (barcodes.isNotEmpty) {
         barcodeValue = barcodes.first.rawValue;
-        print("📦 Barcode from camera: $barcodeValue");
+        print("Barcode from camera: $barcodeValue");
       }
 
-      // 📂 Now open gallery picker for more selection
+      // Open gallery picker for more selection
       final XFile? pickedImage = await _picker.pickImage(source: ImageSource.gallery);
       if (pickedImage != null) {
         File pickedFile = File(pickedImage.path);
@@ -74,7 +74,7 @@ class _CameraPageState extends State<CameraPage> {
         String? pickedValue;
         if (pickedBarcodes.isNotEmpty) {
           pickedValue = pickedBarcodes.first.rawValue;
-          print("📦 Barcode from gallery: $pickedValue");
+          print("Barcode from gallery: $pickedValue");
         }
 
         await pickedScanner.close();
@@ -101,7 +101,7 @@ class _CameraPageState extends State<CameraPage> {
         );
       }
     } catch (e) {
-      print('❌ Error during capture/save/scan: $e');
+      print('Error during capture/save/scan: $e');
     }
   }
 
@@ -181,18 +181,35 @@ class _CameraPageState extends State<CameraPage> {
                       },
                       physics: const BouncingScrollPhysics(),
                       itemBuilder: (context, index) {
-                        return Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(20),
+                        final isSelected = index == _selectedPage;
+                        return GestureDetector(
+                          onTap: () {
+                            _pageController.animateToPage(
+                              index,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                            setState(() {
+                              _selectedPage = index;
+                            });
+                          },
+                          child: Center(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? Colors.green.withAlpha((0.8 * 255).toInt())
+                                    : Colors.black.withAlpha((0.6 * 255).toInt()),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                scanModes[index],
+                                style: const TextStyle(color: Colors.white, fontSize: 16),
+                              ),
                             ),
-                            child: Text(
-                              scanModes[index],
-                              style: const TextStyle(color: Colors.white, fontSize: 16),
-                            ),
-                          ),
+                          )
                         );
                       },
                     ),
@@ -236,7 +253,7 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                       ),
 
-                      // ✅ Check Button
+                      // Check Button
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
