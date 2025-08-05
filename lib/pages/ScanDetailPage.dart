@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'profile_page.dart';
+import 'home.dart';
 
 class ScanDetailPage extends StatelessWidget {
   final List<File> images;
@@ -94,7 +96,7 @@ class ScanDetailPage extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(context, true),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -117,14 +119,34 @@ class ScanDetailPage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const CircleAvatar(
-              radius: 25,
-              backgroundImage: AssetImage('assets/profile.jpg'),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 25,
+                // CHRIS: PROFILE PIC GOES HERE
+                backgroundImage: AssetImage('assets/ProfilePic.png'),
+              ),
             ),
-            Image.asset('assets/logo.png', height: 40),
+            GestureDetector(
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+              child: Image.asset('assets/logo.png', height: 40),
+            ),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                // Already on camera screen
+              },
             ),
           ],
         ),

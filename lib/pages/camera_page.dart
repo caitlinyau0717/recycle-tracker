@@ -5,13 +5,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'ScanDetailPage.dart';
 import 'session_gallery_page.dart';
+import 'package:recycletracker/main.dart';
+import 'profile_page.dart';
+import 'home.dart';
 
 class CameraPage extends StatefulWidget {
   @override
   _CameraPageState createState() => _CameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> {
+class _CameraPageState extends State<CameraPage> with RouteAware {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   final PageController _pageController = PageController(viewportFraction: 0.30);
@@ -38,7 +41,14 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _controller?.dispose();
     _pageController.dispose();
     super.dispose();
@@ -95,8 +105,8 @@ class _CameraPageState extends State<CameraPage> {
 
     await barcodeScanner.close();
 
-    // ✅ Navigate to ScanDetailPage with all images + barcode values
-    Navigator.push(
+    // Navigate to ScanDetailPage with all images + barcode values
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ScanDetailPage(
@@ -105,6 +115,12 @@ class _CameraPageState extends State<CameraPage> {
         ),
       ),
     );
+
+    if (result == true) {
+      setState(() {
+        _sessionPhotos.clear();
+      });
+    }
   }
 
 
@@ -155,7 +171,13 @@ class _CameraPageState extends State<CameraPage> {
                   top: 50,
                   left: 16,
                   child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomePage()),
+                        (route) => false, // Remove all previous routes
+                      );
+                    },
                     child: const Row(
                       children: [
                         Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
@@ -215,7 +237,7 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // ✅ Under-scan controls: Gallery - Shutter - Submit
+                // Under-scan controls: Gallery - Shutter - Submit
                 Positioned(
                   bottom: 40,
                   left: 0,
@@ -223,7 +245,7 @@ class _CameraPageState extends State<CameraPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // 📂 Session Gallery Button (left)
+                      // Session Gallery Button (left)
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -250,7 +272,7 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                       ),
 
-                      // 📸 Shutter button (center)
+                      // Shutter button (center)
                       GestureDetector(
                         onTap: _captureAndSaveAndScan,
                         child: Container(
@@ -303,11 +325,28 @@ class _CameraPageState extends State<CameraPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const CircleAvatar(
-              radius: 25,
-              backgroundImage: AssetImage('assets/ProfilePic.png'),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 25,
+                backgroundImage: AssetImage('assets/ProfilePic.png'),
+              ),
             ),
-            Image.asset('assets/logo.png', height: 40),
+            GestureDetector(
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+              child: Image.asset('assets/logo.png', height: 40),
+            ),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
               onPressed: () {
