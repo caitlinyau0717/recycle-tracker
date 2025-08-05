@@ -6,12 +6,16 @@ import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart
 import 'ScanDetailPage.dart';
 import 'session_gallery_page.dart';
 
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
 class CameraPage extends StatefulWidget {
   @override
   _CameraPageState createState() => _CameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> {
+List<String> scannedBarcodes = [];
+
+class _CameraPageState extends State<CameraPage> with RouteAware {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   final PageController _pageController = PageController(viewportFraction: 0.30);
@@ -21,6 +25,25 @@ class _CameraPageState extends State<CameraPage> {
   List<File> _sessionPhotos = [];
 
   final List<String> scanModes = ['Quick Scan', 'Bulk Scan'];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  }
+
+  @override
+  void didPopNext() {
+    // Called when returning to CameraPage
+    final route = ModalRoute.of(context);
+    if (route?.settings.name == null) {
+      // Default pop back from unnamed route like ScanDetailPage
+      setState(() {
+        _sessionPhotos.clear();
+        scannedBarcodes.clear();
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -41,6 +64,7 @@ class _CameraPageState extends State<CameraPage> {
   void dispose() {
     _controller?.dispose();
     _pageController.dispose();
+    routeObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -52,14 +76,6 @@ class _CameraPageState extends State<CameraPage> {
       setState(() {
         _sessionPhotos.add(imageFile);
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Scanned"),
-          duration: const Duration(milliseconds: 500),
-          backgroundColor: Colors.green,
-        ),
-      );
     } catch (e) {
       print('Error during capture/save: $e');
     }
@@ -83,10 +99,9 @@ class _CameraPageState extends State<CameraPage> {
       return;
     }
 
-    List<String> scannedBarcodes = [];
-
     final barcodeScanner = BarcodeScanner();
 
+    scannedBarcodes.clear();
     for (final image in _sessionPhotos) {
       final inputImage = InputImage.fromFile(image);
       final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
@@ -99,7 +114,7 @@ class _CameraPageState extends State<CameraPage> {
 
     await barcodeScanner.close();
 
-    Navigator.push(
+    final sessionCompleted = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => ScanDetailPage(
@@ -108,13 +123,27 @@ class _CameraPageState extends State<CameraPage> {
         ),
       ),
     );
+    if (sessionCompleted == true) {
+      setState(() {
+        _sessionPhotos.clear();
+        scannedBarcodes.clear();
+      });
+    }
+
+    // If the user finished the session by pressing "Done"
+    if (sessionCompleted == true) {
+      setState(() {
+        _sessionPhotos.clear();
+        scannedBarcodes.clear();
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final scanBoxWidth = screenSize.width * 0.9;
-    final scanBoxHeight = screenSize.height * 0.5;
+    final scanBoxHeight = screenSize.height * 0.6;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -126,7 +155,7 @@ class _CameraPageState extends State<CameraPage> {
                   child: Stack(
                     children: [
                       Align(
-                        alignment: Alignment.center,
+                        alignment: Alignment(0.0, -0.3),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: SizedBox(
@@ -137,7 +166,7 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                       ),
                       Align(
-                        alignment: Alignment.center,
+                        alignment: Alignment(0.0, -0.3),
                         child: Container(
                           width: scanBoxWidth,
                           height: scanBoxHeight,
