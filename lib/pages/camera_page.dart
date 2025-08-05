@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'ScanDetailPage.dart';
 import 'session_gallery_page.dart';
+import 'profile_page.dart';
+import 'home.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
@@ -183,14 +185,24 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                 Positioned(
                   top: 50,
                   left: 16,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
-                        Text('home', style: TextStyle(color: Colors.black54, fontSize: 16)),
-                      ],
-                    ),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (context) => HomePage()),
+                            (Route<dynamic> route) => false,
+                          );
+                        },
+                        child: const Row(
+                          children: [
+                            Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
+                            Text('home', style: TextStyle(color: Colors.black54, fontSize: 16)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -250,7 +262,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            // 📸 Shutter button – centered under logo
+                            // Shutter button – centered under logo
                             GestureDetector(
                               onTap: () {
                                 _captureAndSaveAndScan();
@@ -274,7 +286,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                               ),
                             ),
 
-                            // 📂 Gallery button – floated to the left of center
+                            // Gallery button – floated to the left of center
                             Positioned(
                               left: MediaQuery.of(context).size.width / 2 - 140,
                               child: GestureDetector(
@@ -304,7 +316,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                               ),
                             ),
 
-                            // ✅ Submit button – floated to the right of center
+                            // Submit button – floated to the right of center
                             Positioned(
                               right: MediaQuery.of(context).size.width / 2 - 175,
                               child: GestureDetector(
@@ -344,11 +356,29 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const CircleAvatar(
-              radius: 25,
-              backgroundImage: AssetImage('assets/ProfilePic.png'),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 25,
+                // CHRIS: PROFILE PIC GOES HERE
+                backgroundImage: AssetImage('assets/ProfilePic.png'),
+              ),
             ),
-            Image.asset('assets/logo.png', height: 40),
+            GestureDetector(
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+              child: Image.asset('assets/logo.png', height: 40),
+            ),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
               onPressed: () {},
