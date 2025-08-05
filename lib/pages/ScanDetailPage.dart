@@ -1,11 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'profile_page.dart';
+import 'home.dart';
 
 class ScanDetailPage extends StatelessWidget {
-  final File? imageFile;
-  final String? barcodeValue;
+  final List<File> images;
+  final List<String> barcodeValues;
 
-  const ScanDetailPage({super.key, this.imageFile, this.barcodeValue});
+  const ScanDetailPage({
+    super.key,
+    required this.images,
+    required this.barcodeValues,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,38 +40,42 @@ class ScanDetailPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Show image if available
-          if (imageFile != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(imageFile!, height: 200, fit: BoxFit.cover),
-              ),
-            ),
-
-          // Show barcode result
-          if (barcodeValue != null)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                '📦 Scanned Barcode: $barcodeValue',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          // Scrollable list of session images
+          if (images.isNotEmpty)
+            SizedBox(
+              height: 140,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: images.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      images[index],
+                      width: 120,
+                      height: 140,
+                      fit: BoxFit.cover,
+                    ),
+                  );
+                },
               ),
             ),
 
           const SizedBox(height: 16),
 
+          // Barcode value list
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildItem('Coca Cola 16 oz Bottle', '\$0.05'),
-                _buildItem('Mountain Dew 16 oz Bottle', '\$0.05'),
-                _buildItem('Poland Spring 8 oz Bottle', '\$0.10', count: 2),
-                _buildItem('Sprite 8 oz Can', '\$0.05'),
-              ],
-            ),
+            child: barcodeValues.isEmpty
+                ? const Center(child: Text("No barcodes found."))
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: barcodeValues.length,
+                    itemBuilder: (context, index) {
+                      return _buildScannedItem(barcodeValues[index], index + 1);
+                    },
+                  ),
           ),
 
           // Bottom Row
@@ -80,13 +90,13 @@ class ScanDetailPage extends StatelessWidget {
                     border: Border.all(color: Colors.green),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'Total: \$0.25',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: Text(
+                    'Total: \$${(barcodeValues.length * 0.05).toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(context, true),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -109,14 +119,34 @@ class ScanDetailPage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const CircleAvatar(
-              radius: 25,
-              backgroundImage: AssetImage('assets/profile.jpg'),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 25,
+                // CHRIS: PROFILE PIC GOES HERE
+                backgroundImage: AssetImage('assets/ProfilePic.png'),
+              ),
             ),
-            Image.asset('assets/logo.png', height: 40),
+            GestureDetector(
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+              child: Image.asset('assets/logo.png', height: 40),
+            ),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                // Already on camera screen
+              },
             ),
           ],
         ),
@@ -124,20 +154,27 @@ class ScanDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildItem(String name, String price, {int count = 1}) {
+  Widget _buildScannedItem(String barcode, int index) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(child: Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500))),
-            if (count > 1)
-              Text('x$count', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Expanded(
+              child: Text(
+                'Item $index',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ),
+            Text('\$0.05', style: const TextStyle(fontSize: 16)),
           ],
         ),
         const SizedBox(height: 4),
-        Text(price, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+        Text(
+          'Barcode: $barcode',
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+        ),
         const Divider(color: Colors.green),
       ],
     );

@@ -31,7 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => HomePage()),
-                    (Route<dynamic> route) => false,
+                    (route) => false, // Remove all previous routes
                   );
                 },
                 child: const Row(
