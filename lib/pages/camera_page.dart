@@ -50,8 +50,16 @@ class _CameraPageState extends State<CameraPage> {
       File imageFile = File(image.path);
 
       setState(() {
-        _sessionPhotos.add(imageFile); // Save image to session memory
+        _sessionPhotos.add(imageFile);
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Scanned"),
+          duration: const Duration(milliseconds: 500),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       print('Error during capture/save: $e');
     }
@@ -76,13 +84,9 @@ class _CameraPageState extends State<CameraPage> {
     }
 
     List<String> scannedBarcodes = [];
-    
-    final File lastImage = _sessionPhotos.last;
-    final inputImage = InputImage.fromFile(lastImage);
 
     final barcodeScanner = BarcodeScanner();
 
-    // 🔁 Loop through all session images and scan each one
     for (final image in _sessionPhotos) {
       final inputImage = InputImage.fromFile(image);
       final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
@@ -95,7 +99,6 @@ class _CameraPageState extends State<CameraPage> {
 
     await barcodeScanner.close();
 
-    // ✅ Navigate to ScanDetailPage with all images + barcode values
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -106,7 +109,6 @@ class _CameraPageState extends State<CameraPage> {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +122,6 @@ class _CameraPageState extends State<CameraPage> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
               children: [
-                // Camera preview inside scan box
                 Positioned.fill(
                   child: Stack(
                     children: [
@@ -150,7 +151,6 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // Top back button
                 Positioned(
                   top: 50,
                   left: 16,
@@ -165,7 +165,6 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // Swipeable scan mode bar
                 Positioned(
                   bottom: 130,
                   left: 0,
@@ -215,88 +214,101 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
 
-                // ✅ Under-scan controls: Gallery - Shutter - Submit
-                Positioned(
-                  bottom: 40,
-                  left: 0,
-                  right: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // 📂 Session Gallery Button (left)
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SessionGalleryPage(
-                                images: _sessionPhotos,
-                                onDelete: (File image) {
-                                  setState(() {
-                                    _sessionPhotos.remove(image);
-                                  });
-                                },
+                      Positioned(
+                        bottom: 40,
+                        left: 0,
+                        right: 0,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // 📸 Shutter button – centered under logo
+                            GestureDetector(
+                              onTap: () {
+                                _captureAndSaveAndScan();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Scanned"),
+                                    duration: Duration(milliseconds: 500),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: 70,
+                                height: 70,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.green, width: 4),
+                                  color: Colors.grey[300],
+                                ),
+                                child: const Icon(Icons.camera_alt, size: 30),
                               ),
                             ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.green),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.photo_library, color: Colors.green, size: 28),
-                        ),
-                      ),
 
-                      // 📸 Shutter button (center)
-                      GestureDetector(
-                        onTap: _captureAndSaveAndScan,
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.green, width: 4),
-                            color: Colors.grey[300],
-                          ),
-                          child: const Icon(Icons.camera_alt, size: 30),
-                        ),
-                      ),
-
-                      // Submit button (right)
-                      GestureDetector(
-                        onTap: _submitSessionPhotos,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.green),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: const [
-                              Text(
-                                "Submit",
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                            // 📂 Gallery button – floated to the left of center
+                            Positioned(
+                              left: MediaQuery.of(context).size.width / 2 - 140,
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SessionGalleryPage(
+                                        images: _sessionPhotos,
+                                        onDelete: (File image) {
+                                          setState(() {
+                                            _sessionPhotos.remove(image);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.green),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.photo_library, color: Colors.green, size: 28),
                                 ),
                               ),
-                              SizedBox(width: 6),
-                              Icon(Icons.check_circle, color: Colors.green, size: 24),
-                            ],
-                          ),
+                            ),
+
+                            // ✅ Submit button – floated to the right of center
+                            Positioned(
+                              right: MediaQuery.of(context).size.width / 2 - 175,
+                              child: GestureDetector(
+                                onTap: _submitSessionPhotos,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.green),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: const [
+                                      Text(
+                                        "Submit",
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      SizedBox(width: 6),
+                                      Icon(Icons.check_circle, color: Colors.green, size: 24),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
               ],
             ),
 
-      // Bottom footer
       bottomNavigationBar: Container(
         color: const Color(0xFFD5EFCD),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
@@ -310,9 +322,7 @@ class _CameraPageState extends State<CameraPage> {
             Image.asset('assets/logo.png', height: 40),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
-              onPressed: () {
-                // Already on camera screen
-              },
+              onPressed: () {},
             ),
           ],
         ),
