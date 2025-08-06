@@ -276,7 +276,7 @@ class _CameraPageState extends State<CameraPage> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const ScanDetailPage()),
+                            MaterialPageRoute(builder: (context) => const ScanDetailPage( images: [], barcodeValues: [], )),
                           );
                         },
                         child: Container(
