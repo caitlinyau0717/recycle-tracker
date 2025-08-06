@@ -1,49 +1,44 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+import 'package:gal/gal.dart';
+import 'package:http/http.dart' as http;
 import 'ScanDetailPage.dart';
-import 'session_gallery_page.dart';
-import 'profile_page.dart';
-import 'home.dart';
-
-final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 class CameraPage extends StatefulWidget {
   @override
   _CameraPageState createState() => _CameraPageState();
 }
 
-List<String> scannedBarcodes = [];
-
-class _CameraPageState extends State<CameraPage> with RouteAware {
+class _CameraPageState extends State<CameraPage> {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
-  final PageController _pageController = PageController(viewportFraction: 0.30);
+  final PageController _pageController = PageController(viewportFraction: 0.45);
   final ImagePicker _picker = ImagePicker();
   int _selectedPage = 0;
-
-  List<File> _sessionPhotos = [];
+  bool isLoading = false;
+  Map<String, dynamic>? productData;
 
   final List<String> scanModes = ['Quick Scan', 'Bulk Scan'];
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
-  }
+  List<File> _bulkScannedImages = [];
+  List<String> _bulkScannedBarcodes = [];
+  List<Map<String, dynamic>> _bulkProductData = [];
 
-  @override
-  void didPopNext() {
-    // Called when returning to CameraPage
-    final route = ModalRoute.of(context);
-    if (route?.settings.name == null) {
-      // Default pop back from unnamed route like ScanDetailPage
-      setState(() {
-        _sessionPhotos.clear();
-        scannedBarcodes.clear();
-      });
+  Future<Map<String, dynamic>?> fetchProductData(String barcode) async {
+    final url = Uri.parse('https://world.openfoodfacts.org/api/v2/product/$barcode.json');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching product data: $e');
+      return null;
     }
   }
 
@@ -66,86 +61,91 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
   void dispose() {
     _controller?.dispose();
     _pageController.dispose();
-    routeObserver.unsubscribe(this);
     super.dispose();
   }
 
   Future<void> _captureAndSaveAndScan() async {
     try {
+      setState(() => isLoading = true);
       final XFile image = await _controller!.takePicture();
-      File imageFile = File(image.path);
+      await Gal.putImage(image.path);
 
-      setState(() {
-        _sessionPhotos.add(imageFile);
-      });
+      File imageFile = File(image.path);
+      final inputImage = InputImage.fromFile(imageFile);
+      final barcodeScanner = BarcodeScanner();
+      final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
+      await barcodeScanner.close();
+
+      if (barcodes.isNotEmpty) {
+        final barcodeValue = barcodes.first.rawValue!;
+        final productData = await fetchProductData(barcodeValue);
+
+        if (_selectedPage == 0) { // Single scan mode
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ScanDetailPage(
+                images: [imageFile],
+                barcodeValues: [barcodeValue],
+              ),
+            ),
+          );
+        } else { // Bulk scan mode
+          setState(() {
+            _bulkScannedImages.add(imageFile);
+            _bulkScannedBarcodes.add(barcodeValue);
+            _bulkProductData.add(productData ?? {});
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Added ${_bulkScannedImages.length} items')),
+          );
+        }
+      }
     } catch (e) {
-      print('Error during capture/save: $e');
+      print('Error during capture: $e');
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
-  Future<void> _submitSessionPhotos() async {
-    if (_sessionPhotos.isEmpty) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("No Photos Taken"),
-          content: const Text("Please take at least one photo before submitting."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text("OK"),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    final barcodeScanner = BarcodeScanner();
-
-    scannedBarcodes.clear();
-    for (final image in _sessionPhotos) {
-      final inputImage = InputImage.fromFile(image);
-      final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
-      if (barcodes.isNotEmpty) {
-        scannedBarcodes.add(barcodes.first.rawValue ?? 'Unknown');
-      } else {
-        scannedBarcodes.add('No barcode found');
-      }
-    }
-
-    await barcodeScanner.close();
-
-    final sessionCompleted = await Navigator.push<bool>(
+  void _navigateToBulkResults() {
+    if (_bulkScannedImages.isEmpty) return;
+    
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ScanDetailPage(
-          images: _sessionPhotos,
-          barcodeValues: scannedBarcodes,
+          images: _bulkScannedImages,
+          barcodeValues: _bulkScannedBarcodes,
         ),
       ),
     );
-    if (sessionCompleted == true) {
-      setState(() {
-        _sessionPhotos.clear();
-        scannedBarcodes.clear();
-      });
-    }
+  }
 
-    // If the user finished the session by pressing "Done"
-    if (sessionCompleted == true) {
-      setState(() {
-        _sessionPhotos.clear();
-        scannedBarcodes.clear();
-      });
-    }
+  // Update the check button to handle bulk mode
+  Widget _buildCheckButton() {
+    return GestureDetector(
+      onTap: _selectedPage == 0 
+          ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => ScanDetailPage(images: [], barcodeValues: [])))
+          : _navigateToBulkResults,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.green),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(Icons.check, color: Colors.green, size: 28),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
+    // ... (keep your existing build method exactly the same)
+
+     final screenSize = MediaQuery.of(context).size;
     final scanBoxWidth = screenSize.width * 0.9;
-    final scanBoxHeight = screenSize.height * 0.6;
+    final scanBoxHeight = screenSize.height * 0.5;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -153,11 +153,12 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
               children: [
+                // Camera preview inside scan box
                 Positioned.fill(
                   child: Stack(
                     children: [
                       Align(
-                        alignment: Alignment(0.0, -0.3),
+                        alignment: Alignment.center,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: SizedBox(
@@ -168,7 +169,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                         ),
                       ),
                       Align(
-                        alignment: Alignment(0.0, -0.3),
+                        alignment: Alignment.center,
                         child: Container(
                           width: scanBoxWidth,
                           height: scanBoxHeight,
@@ -182,30 +183,25 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                   ),
                 ),
 
+                // Top back button
                 Positioned(
                   top: 50,
                   left: 16,
                   child: Row(
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (context) => HomePage()),
-                            (Route<dynamic> route) => false,
-                          );
-                        },
-                        child: const Row(
-                          children: [
-                            Icon(Icons.arrow_back_ios, color: Colors.black54, size: 16),
-                            Text('home', style: TextStyle(color: Colors.black54, fontSize: 16)),
-                          ],
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Text(
+                        'home',
+                        style: TextStyle(color: Colors.black, fontSize: 18),
                       ),
                     ],
                   ),
                 ),
 
+                // Swipeable scan mode bar
                 Positioned(
                   bottom: 130,
                   left: 0,
@@ -220,33 +216,16 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                       },
                       physics: const BouncingScrollPhysics(),
                       itemBuilder: (context, index) {
-                        final isSelected = index == _selectedPage;
-                        return GestureDetector(
-                          onTap: () {
-                            _pageController.animateToPage(
-                              index,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                            setState(() {
-                              _selectedPage = index;
-                            });
-                          },
-                          child: Center(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Colors.green.withAlpha((0.8 * 255).toInt())
-                                    : Colors.black.withAlpha((0.6 * 255).toInt()),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                scanModes[index],
-                                style: const TextStyle(color: Colors.white, fontSize: 16),
-                              ),
+                        return Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              scanModes[index],
+                              style: const TextStyle(color: Colors.white, fontSize: 16),
                             ),
                           ),
                         );
@@ -255,133 +234,83 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                   ),
                 ),
 
-                      Positioned(
-                        bottom: 40,
-                        left: 0,
-                        right: 0,
-                        child: Stack(
-                          alignment: Alignment.center,
+                // Under-scan controls: $ saved - shutter - check button
+                Positioned(
+                  bottom: 40,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.green),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Column(
                           children: [
-                            // Shutter button – centered under logo
-                            GestureDetector(
-                              onTap: () {
-                                _captureAndSaveAndScan();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Scanned"),
-                                    duration: Duration(milliseconds: 500),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                width: 70,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.green, width: 4),
-                                  color: Colors.grey[300],
-                                ),
-                                child: const Icon(Icons.camera_alt, size: 30),
-                              ),
-                            ),
-
-                            // Gallery button – floated to the left of center
-                            Positioned(
-                              left: MediaQuery.of(context).size.width / 2 - 140,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => SessionGalleryPage(
-                                        images: _sessionPhotos,
-                                        onDelete: (File image) {
-                                          setState(() {
-                                            _sessionPhotos.remove(image);
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.green),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(Icons.photo_library, color: Colors.green, size: 28),
-                                ),
-                              ),
-                            ),
-
-                            // Submit button – floated to the right of center
-                            Positioned(
-                              right: MediaQuery.of(context).size.width / 2 - 175,
-                              child: GestureDetector(
-                                onTap: _submitSessionPhotos,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.green),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    children: const [
-                                      Text(
-                                        "Submit",
-                                        style: TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Icon(Icons.check_circle, color: Colors.green, size: 24),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
+                            Text('\$0.00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text('saved', style: TextStyle(fontSize: 12)),
                           ],
                         ),
                       ),
+
+                      // 📸 Shutter button (save + gallery)
+                      GestureDetector(
+                        onTap: _captureAndSaveAndScan,
+                        child: Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.green, width: 4),
+                            color: Colors.grey[300],
+                          ),
+                          child: const Icon(Icons.camera_alt, size: 30),
+                        ),
+                      ),
+
+                      // ✅ Check Button
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ScanDetailPage()),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.green),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.check, color: Colors.green, size: 28),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
 
+      // Bottom footer
       bottomNavigationBar: Container(
         color: const Color(0xFFD5EFCD),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
-                );
-              },
-              child: CircleAvatar(
-                radius: 25,
-                // CHRIS: PROFILE PIC GOES HERE
-                backgroundImage: AssetImage('assets/ProfilePic.png'),
-              ),
+            const CircleAvatar(
+              radius: 25,
+              backgroundImage: AssetImage('assets/ProfilePic.png'),
             ),
-            GestureDetector(
-              onTap: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                  (Route<dynamic> route) => false,
-                );
-              },
-              child: Image.asset('assets/logo.png', height: 40),
-            ),
+            Image.asset('assets/logo.png', height: 40),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
-              onPressed: () {},
+              onPressed: () {
+                // Already on camera screen
+              },
             ),
           ],
         ),
