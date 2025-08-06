@@ -143,7 +143,7 @@ class _CameraPageState extends State<CameraPage> {
   Widget build(BuildContext context) {
     // ... (keep your existing build method exactly the same)
 
-     final screenSize = MediaQuery.of(context).size;
+    final screenSize = MediaQuery.of(context).size;
     final scanBoxWidth = screenSize.width * 0.9;
     final scanBoxHeight = screenSize.height * 0.5;
 
