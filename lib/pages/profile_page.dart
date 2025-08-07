@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'edit_profile_page.dart';
 import 'camera_page.dart';
 import 'home.dart';
+import '../db_connection.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
