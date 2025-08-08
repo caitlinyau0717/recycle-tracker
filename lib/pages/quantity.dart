@@ -11,7 +11,7 @@ void main(List<String> arguments) async {
   );
   ProductResultV3 product = await OpenFoodAPIClient.getProductV3(config);
   //print('Hello world: ${food_facts_project.calculate()}!');
-  print("packaging\n");
+  print("Hi. packaging\n");
   print(product.product?.packaging); // Coca Cola Zero
   List<String> here = product.product?.categoriesTags??[];
   print("categories\n");
@@ -26,14 +26,15 @@ void main(List<String> arguments) async {
   String quantity = product.product?.quantity??"";
   quantity = quantity.toLowerCase();
   String quantityMeasured = "";
-  int fluidFound = quantity.indexOf("ml");
-  if (fluidFound == -1){
-    fluidFound = quantity.indexOf("fl");
-    if (fluidFound == -1){
-      fluidFound = quantity.indexOf("l");
+  int milliletersFound = quantity.indexOf("ml");
+  if (milliletersFound == -1){
+    print("I DID NOT FIND MILLILITERS. NOW I WILL ENTER IF STATEMENTS");
+    milliletersFound = quantity.indexOf("fl");
+    if (milliletersFound == -1){
+      milliletersFound = quantity.indexOf("l");
       quantityMeasured = "l";
-      if (fluidFound == -1){
-        fluidFound = 2;
+      if (milliletersFound == -1){
+        milliletersFound = 2;
       }
       }
       else{
@@ -43,11 +44,11 @@ void main(List<String> arguments) async {
   else{
       quantityMeasured = "ml"; 
   }
-  quantity = quantity.substring(0,fluidFound);
+  quantity = quantity.substring(0,milliletersFound);
   quantity = quantity.replaceAll(" ", "");
   quantity = quantity.replaceAll(",", ".");
   double doubleQuantity = double.parse(quantity);
-  print(fluidFound);
+  print(milliletersFound);
   print(quantityMeasured);
   print(doubleQuantity);
   //quantity = quantity.substring(0,fluidFound);
