@@ -62,13 +62,39 @@ void main(List<String> arguments) async {
     }
   }
 
+ 
+
   // Extract numeric part
   quantity = quantity.substring(0, mlFound);
   quantity = quantity.replaceAll(" ", "");
   quantity = quantity.replaceAll(",", ".");
+
+  // Parse string to double first
   double doubleQuantity = double.parse(quantity);
 
-  print(mlFound);
-  print(quantityMeasured);
-  print(doubleQuantity);
+  print("WAS ML FOUND?: $mlFound\n");
+  print("ORIGINAL QUANTITY UNITS: $quantityMeasured");
+  print("ACTUAL QUANTITY (in original units): $doubleQuantity");
+
+  // CONVERT TO ML based on unit
+  if (quantityMeasured == "l") {
+    doubleQuantity *= 1000; // liters to mL
+  } else if (quantityMeasured == "fl") {
+    doubleQuantity *= 29.5735; // fluid ounces to mL
+  }
+
+  // Print info
+  print("THIS IS A $doubleQuantity mL BOTTLE");
+
 }
+
+
+
+
+
+//goal: return a string of information about the bottle or can 
+
+//Brand, quantity (ML), and return recycling price (depends on the state)
+
+
+
