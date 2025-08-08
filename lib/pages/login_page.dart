@@ -103,26 +103,38 @@ class _LoginPageState extends State<LoginPage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 50, vertical: 15),
                           ),
-                          onPressed: () async {
-                            bool exists = await db.userExists(username);
-                            if (exists) {
-                              bool authenticated = await db.passwordCorrect(username, password);
-                              if (authenticated) {
-                                // TODO: handle login
-                              } else {
-                                // TODO: handle incorrect password
-                              }
+                        onPressed: () async {
+                          bool exists = await db.userExists(username);
+                          if (exists) {
+                            bool authenticated = await db.passwordCorrect(username, password);
+                            if (authenticated) {
+                              // ✅ Only navigate if auth passed
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => HomePage()),
+                              );
                             } else {
-                              // TODO: invalid username
+                              // ❌ Incorrect password
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Invalid username/password"),
+                                  duration: Duration(milliseconds: 1500),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
                             }
-
-                            await
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => HomePage()),
+                          } else {
+                            // ❌ Username doesn't exist
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Invalid username/password"),
+                                duration: Duration(milliseconds: 1500),
+                                behavior: SnackBarBehavior.floating,
+                              ),
                             );
-                          },
+                          }
+                        },
+
                           child: const Text(
                             "Log In",
                             style: TextStyle(color: Colors.white),
