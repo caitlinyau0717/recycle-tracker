@@ -206,6 +206,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                       onPressed: () async {
                         //add account to database
                         await db.createAccount(username, fullname, password, state, "temp");
+                        db.closeConnection();
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(

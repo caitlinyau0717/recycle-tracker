@@ -30,6 +30,7 @@ class DatabaseHandler{
       rethrow;
     }
   }
+
   Future<void> createAccount(String user, String fullname, String password, String state, String image) async {
     DbCollection accounts = db.collection('userAccounts');
     await accounts.insertOne({"username" : user, "name" : fullname,
@@ -49,5 +50,11 @@ class DatabaseHandler{
     DbCollection accounts = db.collection('userAccounts');
     var account = await accounts.findOne({'username' : username, 'password_hash' : password});
     return(account != null);
+  }
+
+  Future<String> getName(String username) async {
+    DbCollection accounts = db.collection('userAccounts');
+    var account = await accounts.findOne({'username' : username});
+    return(account?["name"]);
   }
 }
