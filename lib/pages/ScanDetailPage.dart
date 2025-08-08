@@ -2,15 +2,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'profile_page.dart';
 import 'home.dart';
-
+import 'package:openfoodfacts/openfoodfacts.dart';
 class ScanDetailPage extends StatelessWidget {
   final List<File> images;
   final List<String> barcodeValues;
-
+  final List<int> barcodeIndex;
   const ScanDetailPage({
     super.key,
     required this.images,
     required this.barcodeValues,
+    required this.barcodeIndex,
   });
 
   @override
@@ -47,13 +48,14 @@ class ScanDetailPage extends StatelessWidget {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: images.length,
+                itemCount: barcodeIndex.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
+                  int curr_Index = barcodeIndex[index];
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.file(
-                      images[index],
+                      images[curr_Index],
                       width: 120,
                       height: 140,
                       fit: BoxFit.cover,
@@ -153,30 +155,68 @@ class ScanDetailPage extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildScannedItem(String barcode, int index) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                'Item $index',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-            ),
-            Text('\$0.05', style: const TextStyle(fontSize: 16)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Barcode: $barcode',
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
-        ),
-        const Divider(color: Colors.green),
-      ],
+  Future<String> fetchProductInfo(String barcode) async {
+    OpenFoodAPIConfiguration.userAgent = UserAgent(
+      name: 'MyScannerApp',
+      url: 'https://example.com',
     );
+
+    final config = ProductQueryConfiguration(
+      barcode,
+      version: ProductQueryVersion.v3,
+    );
+
+    final result = await OpenFoodAPIClient.getProductV3(config);
+
+    final name = result.product?.productName ?? 'null';
+    String packaging = result.product?.packaging?? 'null';
+    String categories = result.product?.categories?? 'null';
+    categories = categories.toLowerCase();
+    packaging = packaging.toLowerCase();
+    if(name == 'null'){
+      return '0.0';
+    }
+    return '0.05';
   }
+
+Widget _buildScannedItem(String barcode, int index) {
+  return FutureBuilder<String>(
+    future: fetchProductInfo(barcode),
+    builder: (context, snapshot) {
+      String displayValue;
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        displayValue = 'Loading...';
+      } else if (snapshot.hasError) {
+        displayValue = 'Error';
+      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        displayValue = '\$0.00'; // fallback value if empty string
+      } else {
+        displayValue = snapshot.data!;
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Item $index',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+              ),
+              Text(displayValue, style: const TextStyle(fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Barcode: $barcode',
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+          const Divider(color: Colors.green),
+        ],
+      );
+    },
+  );
+}
 }
