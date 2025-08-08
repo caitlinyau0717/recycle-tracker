@@ -2,20 +2,182 @@ import 'dart:io';
 import 'package:mongo_dart/mongo_dart.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
 
+//StateBottleRules class
 class StateBottleRules {
-  final double depositSmall;  // e.g., < 24 fl oz, or single deposit if fixed
-  final double depositLarge;  // e.g., >= 24 fl oz, or null if no volume differentiation
-  final double depositSpecial; // e.g. boxed wine special rate, can be null
-  final List<String> includedCategories;  // categories eligible for deposit
-  final List<String> excludedCategories;  // categories excluded from deposit
+  final double? depositSmall;
+  final double? depositLarge;
+  final double? depositSpecial;
+  final List<String> includedCategories;
+  final List<String> excludedCategories;
+  final double? volumeBreakpointFlOz; // <= this
 
   StateBottleRules({
-    required this.depositSmall,
-    this.depositLarge = 0.0,
-    this.depositSpecial = 0.0,
-    this.includedCategories = const [],
+    this.depositSmall,
+    this.depositLarge,
+    this.depositSpecial,
+    required this.includedCategories,
     this.excludedCategories = const [],
+    this.volumeBreakpointFlOz, // <= this
   });
+}
+
+//MAP FOR STATE BOTTLE DEPOSIT RULES
+final Map<String, StateBottleRules> stateRules = {
+  'CA': StateBottleRules(
+    depositSmall: 0.05, // <= 24 fl oz
+    depositLarge: 0.10, // > 24 fl oz
+    depositSpecial: 0.25, // boxed wine, wine pouches, cartons
+    includedCategories: [
+      'beer', 'soft drinks', 'water', 'boxed wine', 'wine pouches', 'cartons'
+    ],
+    excludedCategories: [
+      'milk', 'vegetable juice > 16oz', 'fruit juice >=46oz', 'baby formula'
+    ],
+    volumeBreakpointFlOz: 24, // to help logic
+  ),
+
+  'CT': StateBottleRules(
+    depositSmall: 0.10,
+    includedCategories: [
+      'beer', 'soft drinks', 'water', 'carbonated water'
+    ],
+    excludedCategories: [
+      'milk', 'juice', 'mineral water'
+    ],
+  ),
+
+  'HI': StateBottleRules(
+    depositSmall: 0.05,
+    includedCategories: [
+      'beer', 'soft drinks', 'water', 'juice', 'wine', 'liquor'
+    ],
+  ),
+
+  'IA': StateBottleRules(
+    depositSmall: 0.05,
+    includedCategories: [
+      'beer', 'carbonated soft drinks', 'wine coolers', 'liquor'
+    ],
+    excludedCategories: [
+      'milk', 'non-carbonated water', 'juice'
+    ],
+  ),
+
+  'ME': StateBottleRules(
+    depositSmall: 0.05,
+    depositLarge: 0.15, // liquor and wine
+    includedCategories: [
+      'fruit juice soda', 'beer', 'bottled water', 'liquor', 'wine'
+    ],
+    excludedCategories: [
+      'blueberry juice', 'apple cider produced in Maine'
+    ],
+  ),
+
+  'MA': StateBottleRules(
+    depositSmall: 0.05,
+    includedCategories: [
+      'carbonated beverages'
+    ],
+  ),
+
+  'MI': StateBottleRules(
+    depositSmall: 0.10,
+    includedCategories: [
+      'soft drinks', 'soda water', 'carbonated natural water', 'mineral water',
+      'nonalcoholic carbonated drink', 'beer', 'ale', 'malt drink', 'kombucha'
+    ],
+  ),
+
+  'OR': StateBottleRules(
+    depositSmall: 0.10,
+    includedCategories: [
+      'water', 'flavored water', 'beer', 'malt beverages'
+    ],
+    excludedCategories: [
+      'wine', 'liquor', 'dairy', 'plant-based milk', 'meal replacement', 'infant formula'
+    ],
+  ),
+
+  'VT': StateBottleRules(
+    depositSmall: 0.05,
+    depositLarge: 0.15,
+    includedCategories: [
+      'beer', 'malt', 'soda', 'mixed wine drinks', 'liquor'
+    ],
+  ),
+
+  'NY': StateBottleRules(
+    depositSmall: 0.05,
+    includedCategories: [
+      'beer', 'malt beverages', 'carbonated soft drinks', 'mineral water',
+      'soda water', 'non-carbonated fruit juice', 'non-carbonated vegetable juice',
+      'wine coolers'
+    ],
+    excludedCategories: [
+      'milk', 'dairy alternatives', 'liquor', 'wine', 'spirits', 'juice >= 1 gallon', 'infant formula'
+    ],
+  ),
+};
+
+//CONVERT ANY QUANTITY TO FL OZ
+double? convertQuantityToFlOz(String quantityStr) {
+  if (quantityStr.isEmpty) return null;
+
+  String quantity = quantityStr.toLowerCase().trim();
+
+  // Default to ml if no units found
+  String unit = 'ml';
+
+  // Detect unit and set position to slice numeric part
+  int unitIndex = -1;
+  if (quantity.contains('ml')) {
+    unit = 'ml';
+    unitIndex = quantity.indexOf('ml');
+  } else if (quantity.contains('fl oz')) {
+    unit = 'fl oz';
+    unitIndex = quantity.indexOf('fl oz');
+  } else if (quantity.contains('fl')) {
+    // 'fl' by itself is ambiguous but assume fl oz for now
+    unit = 'fl oz';
+    unitIndex = quantity.indexOf('fl');
+  } else if (quantity.contains('l')) {
+    unit = 'l';
+    unitIndex = quantity.indexOf('l');
+  } else {
+    // No units found, try to parse as ml by default
+    unitIndex = quantity.length;
+  }
+
+  // Extract numeric part (substring before unit)
+  String numberPart = quantity.substring(0, unitIndex).replaceAll(RegExp(r'[ ,]'), '.');
+
+  // Parse to double
+  double? value;
+  try {
+    value = double.parse(numberPart);
+  } catch (e) {
+    return null; // Parsing failed
+  }
+
+  // Convert to fl oz
+  switch (unit) {
+    case 'ml':
+      return value / 29.5735;
+    case 'l':
+      return value * 33.814; // 1 L = 33.814 fl oz
+    case 'fl oz':
+      return value;
+    default:
+      return null; // Unknown unit
+  }
+}
+
+
+//TODO: make a function to return brand, quantity, and recycling price based on openfoodfacts api and the state.
+String getBottleInfo(String brand, double quantityFlOz, String state) {
+  double recyclingPrice = getRecyclingPrice(state);
+  return "Brand: $brand\nQuantity: $quantityFlOz fl oz\nRecycling Price: \$$recyclingPrice";
 }
 
 
@@ -79,8 +241,6 @@ void main(List<String> arguments) async {
     }
   }
 
- 
-
   // Extract numeric part
   quantity = quantity.substring(0, mlFound);
   quantity = quantity.replaceAll(" ", "");
@@ -107,16 +267,5 @@ void main(List<String> arguments) async {
 
 }
 
-//TODO: return a string of information about the bottle or can 
-//String will contain brand, quantity (ML), and return recycling price (depends on the state)
 
 
-final Map<String, double> depositByState = {
-};
-
-
-
-String getBottleInfo(String brand, double quantityML, String state) {
-  double recyclingPrice = getRecyclingPrice(state);
-  return "Brand: $brand\nQuantity: $quantityML mL\nRecycling Price: \$$recyclingPrice";
-}
