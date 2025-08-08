@@ -27,14 +27,11 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< Updated upstream
     var username;
     var fullname;
     var password;
     var imageurl;
     var state;
-=======
->>>>>>> Stashed changes
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -181,11 +178,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                             horizontal: 50, vertical: 15),
                       ),
                       onPressed: () {
-<<<<<<< Updated upstream
                         //add account to database
-                        createAccount(username, fullname, password, state, "temp");
-=======
->>>>>>> Stashed changes
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
