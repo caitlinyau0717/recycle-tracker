@@ -21,14 +21,14 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   final ImagePicker _picker = ImagePicker();
   File? _profileImage;
 
-
+  //Database handler
   late DatabaseHandler db;
   Future<void> _initDb() async {
     db = await DatabaseHandler.createInstance();
     await db.openConnection();
   }
 
-  //initialize async database handler and actionable database handler
+  //Initialize database handler on load of page
   @override
   void initState() {
     super.initState();
