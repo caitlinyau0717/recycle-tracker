@@ -155,7 +155,7 @@ class ScanDetailPage extends StatelessWidget {
       ),
     );
   }
-  Future<String> fetchProductInfo(String barcode) async {
+    Future<String> fetchProductInfo(String barcode) async {
     OpenFoodAPIConfiguration.userAgent = UserAgent(
       name: 'MyScannerApp',
       url: 'https://example.com',
@@ -164,17 +164,29 @@ class ScanDetailPage extends StatelessWidget {
     final config = ProductQueryConfiguration(
       barcode,
       version: ProductQueryVersion.v3,
+      language: OpenFoodFactsLanguage.ENGLISH,
     );
 
     final result = await OpenFoodAPIClient.getProductV3(config);
 
     final name = result.product?.productName ?? 'null';
     String packaging = result.product?.packaging?? 'null';
-    String categories = result.product?.categories?? 'null';
-    categories = categories.toLowerCase();
+    List<String> categories = result.product?.categoriesTags??[];
     packaging = packaging.toLowerCase();
+    String state = 'new york';
     if(name == 'null'){
-      return '0.0';
+      return '0.00';
+    }
+    bool isBev = false;
+    for (String tag in categories){
+      tag = tag.toLowerCase();
+      if(tag.contains("beverage")){
+       isBev = true;
+       break;
+      }
+    }
+    if(isBev == true){
+      return '0.05';
     }
     return '0.05';
   }
