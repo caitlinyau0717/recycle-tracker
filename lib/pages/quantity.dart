@@ -2,6 +2,23 @@ import 'dart:io';
 import 'package:mongo_dart/mongo_dart.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
 
+class StateBottleRules {
+  final double depositSmall;  // e.g., < 24 fl oz, or single deposit if fixed
+  final double depositLarge;  // e.g., >= 24 fl oz, or null if no volume differentiation
+  final double depositSpecial; // e.g. boxed wine special rate, can be null
+  final List<String> includedCategories;  // categories eligible for deposit
+  final List<String> excludedCategories;  // categories excluded from deposit
+
+  StateBottleRules({
+    required this.depositSmall,
+    this.depositLarge = 0.0,
+    this.depositSpecial = 0.0,
+    this.includedCategories = const [],
+    this.excludedCategories = const [],
+  });
+}
+
+
 void main(List<String> arguments) async {
   OpenFoodAPIConfiguration.userAgent =
       UserAgent(name: 'Your app name', url: 'Your url, if applicable');
@@ -74,7 +91,7 @@ void main(List<String> arguments) async {
 
   print("WAS ML FOUND?: $mlFound\n");
   print("ORIGINAL QUANTITY UNITS: $quantityMeasured");
-  print("ACTUAL QUANTITY (in original units): $doubleQuantity");
+  print("ORIGINAL QUANTITY (in original units): $doubleQuantity");
 
   // CONVERT TO ML based on unit
   if (quantityMeasured == "l") {
@@ -84,17 +101,22 @@ void main(List<String> arguments) async {
   }
 
   // Print info
-  print("THIS IS A $doubleQuantity mL BOTTLE");
+  print("THIS IS A $doubleQuantity mL BOTTLE");  
+
+  //will convert into a function to return a string later.
 
 }
 
+//TODO: return a string of information about the bottle or can 
+//String will contain brand, quantity (ML), and return recycling price (depends on the state)
+
+
+final Map<String, double> depositByState = {
+};
 
 
 
-
-//goal: return a string of information about the bottle or can 
-
-//Brand, quantity (ML), and return recycling price (depends on the state)
-
-
-
+String getBottleInfo(String brand, double quantityML, String state) {
+  double recyclingPrice = getRecyclingPrice(state);
+  return "Brand: $brand\nQuantity: $quantityML mL\nRecycling Price: \$$recyclingPrice";
+}
