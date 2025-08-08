@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:mongo_dart/mongo_dart.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
 
-
 void main(List<String> arguments) async {
   OpenFoodAPIConfiguration.userAgent = UserAgent(name: 'Your app name', url: 'Your url, if applicable');
   ProductQueryConfiguration config = ProductQueryConfiguration(
