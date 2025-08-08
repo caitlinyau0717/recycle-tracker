@@ -38,4 +38,16 @@ class DatabaseHandler{
                               "sessions" : [], "bottles_recycled" : 0,
                               "amount_saved" : 0});
   }
+
+  Future<bool> userExists(String username) async {
+    DbCollection accounts = db.collection('userAccounts');
+    var account = await accounts.findOne({'username' : username});
+    return(account != null);
+  }
+
+  Future<bool> passwordCorrect(String username, String password) async {
+    DbCollection accounts = db.collection('userAccounts');
+    var account = await accounts.findOne({'username' : username, 'password_hash' : password});
+    return(account != null);
+  }
 }

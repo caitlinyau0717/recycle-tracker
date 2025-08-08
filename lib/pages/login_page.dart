@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:recycletracker/pages/create_account.dart';
 import 'package:recycletracker/pages/home.dart';
+import 'package:recycletracker/db_connection.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,6 +13,20 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   String username = '';
   String password = '';
+
+  //Database handler
+  late DatabaseHandler db;
+  Future<void> _initDb() async {
+    db = await DatabaseHandler.createInstance();
+    await db.openConnection();
+  }
+
+  //Initialize database handler on load of page
+  @override
+  void initState() {
+    super.initState();
+    _initDb();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,8 +103,20 @@ class _LoginPageState extends State<LoginPage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 50, vertical: 15),
                           ),
-                          onPressed: () {
-                            // TODO: validate username/password from DB
+                          onPressed: () async {
+                            bool exists = await db.userExists(username);
+                            if (exists) {
+                              bool authenticated = await db.passwordCorrect(username, password);
+                              if (authenticated) {
+                                // TODO: handle login
+                              } else {
+                                // TODO: handle incorrect password
+                              }
+                            } else {
+                              // TODO: invalid username
+                            }
+
+                            await
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
