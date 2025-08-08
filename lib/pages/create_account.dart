@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recycletracker/pages/home.dart';
-import 'package:recycletracker/db_connection.dart';
 
 class CreateAccountPage extends StatefulWidget {
   const CreateAccountPage({super.key});
@@ -28,11 +27,14 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< Updated upstream
     var username;
     var fullname;
     var password;
     var imageurl;
     var state;
+=======
+>>>>>>> Stashed changes
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -65,14 +67,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                           TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 25),
 
+                  // Chris: Username
                   const Text("Username:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
-                  TextField(
-                    onChanged: (text){
-                      username = text;
-                    },
-                    decoration: const InputDecoration(
+                  const TextField(
+                    decoration: InputDecoration(
                       hintText: "enter username",
                       border: OutlineInputBorder(),
                       isDense: true,
@@ -80,13 +80,11 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: 15),
 
+                  // Chris: Password
                   const Text("Password:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
-                  TextField(
-                    onChanged: (text){
-                      password = text;
-                    },
+                  const TextField(
                     obscureText: true,
                     decoration: InputDecoration(
                       hintText: "enter password",
@@ -96,13 +94,11 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: 15),
 
+                  // Chris: Real name
                   const Text("Name:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
-                  TextField(
-                    onChanged: (text) {
-                      fullname = text;
-                    },
+                  const TextField(
                     decoration: InputDecoration(
                       hintText: "e.g. Johnny Doe",
                       border: OutlineInputBorder(),
@@ -111,6 +107,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: 15),
 
+                  // Chris: Input State
                   const Text("State:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
@@ -133,9 +130,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         child: Text(state),
                       );
                     }).toList(),
-                    onChanged: (value) {
-                      state = value;
-                    },
+                    onChanged: (value) {},
                     decoration: const InputDecoration(
                       hintText: "Select State",
                       border: OutlineInputBorder(),
@@ -186,8 +181,11 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                             horizontal: 50, vertical: 15),
                       ),
                       onPressed: () {
+<<<<<<< Updated upstream
                         //add account to database
                         createAccount(username, fullname, password, state, "temp");
+=======
+>>>>>>> Stashed changes
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(

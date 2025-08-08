@@ -118,7 +118,6 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
       final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
         if (barcodes.isNotEmpty) {
           if(_currMode == ScanType.quick){
-            print("sdk");
             scannedBarcodes.add(barcodes.first.rawValue ?? 'Unknown');
             _barcodeOrigin.add(_barcodeIndex);
           }
