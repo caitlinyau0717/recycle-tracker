@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:recycletracker/pages/create_account.dart'; // Import the new page
+import 'package:recycletracker/pages/login_page.dart'; // Import the new page
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: CreateAccountPage(),
+      home: LoginPage(),
       navigatorObservers: [routeObserver],
     );
   }

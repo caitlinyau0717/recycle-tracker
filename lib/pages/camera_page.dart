@@ -9,7 +9,14 @@ import 'profile_page.dart';
 import 'home.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
-
+  enum ScanType {
+  quick(0),
+  bulk(1);
+  const ScanType(this.code);
+  final int code;
+  static ScanType fromCode(int code) =>
+      ScanType.values.firstWhere((e) => e.code == code);
+  }
 class CameraPage extends StatefulWidget {
   @override
   _CameraPageState createState() => _CameraPageState();
@@ -25,9 +32,8 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
   int _selectedPage = 0;
 
   List<File> _sessionPhotos = [];
-
   final List<String> scanModes = ['Quick Scan', 'Bulk Scan'];
-
+  ScanType _currMode = ScanType.quick;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -52,7 +58,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
     super.initState();
     _initializeCamera();
   }
-
+  //
   Future<void> _initializeCamera() async {
     _cameras = await availableCameras();
     if (_cameras.isNotEmpty) {
@@ -84,6 +90,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
   }
 
   Future<void> _submitSessionPhotos() async {
+    //if session photos don't exist then say so and move onto barcode scanning
     if (_sessionPhotos.isEmpty) {
       showDialog(
         context: context,
@@ -100,28 +107,42 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
       );
       return;
     }
-
+    //Suggestion: bulk scan and quick delete so be wary
+    //barcode scanning
     final barcodeScanner = BarcodeScanner();
-
     scannedBarcodes.clear();
+    List<int> _barcodeOrigin = [];
+    int _barcodeIndex = 0;
     for (final image in _sessionPhotos) {
       final inputImage = InputImage.fromFile(image);
       final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
-      if (barcodes.isNotEmpty) {
-        scannedBarcodes.add(barcodes.first.rawValue ?? 'Unknown');
-      } else {
+        if (barcodes.isNotEmpty) {
+          if(_currMode == ScanType.quick){
+            print("sdk");
+            scannedBarcodes.add(barcodes.first.rawValue ?? 'Unknown');
+            _barcodeOrigin.add(_barcodeIndex);
+          }
+          if(_currMode == ScanType.bulk){
+            for (Barcode barcode in barcodes){
+            scannedBarcodes.add(barcode.rawValue ?? 'Unknown');
+            _barcodeOrigin.add(_barcodeIndex);
+            }
+          }
+        } else {
         scannedBarcodes.add('No barcode found');
-      }
+        }
+        _barcodeIndex++;
     }
 
     await barcodeScanner.close();
-
+    //build details
     final sessionCompleted = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => ScanDetailPage(
           images: _sessionPhotos,
           barcodeValues: scannedBarcodes,
+          barcodeIndex: _barcodeOrigin,
         ),
       ),
     );
@@ -216,7 +237,10 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                       controller: _pageController,
                       itemCount: scanModes.length,
                       onPageChanged: (index) {
-                        setState(() => _selectedPage = index);
+                        setState(() {
+                        _selectedPage = index;
+                        _currMode = ScanType.fromCode(index);
+                        });
                       },
                       physics: const BouncingScrollPhysics(),
                       itemBuilder: (context, index) {
@@ -230,6 +254,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                             );
                             setState(() {
                               _selectedPage = index;
+                              _currMode = ScanType.fromCode(index);
                             });
                           },
                           child: Center(
@@ -267,12 +292,16 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                               onTap: () {
                                 _captureAndSaveAndScan();
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Scanned"),
+                                   SnackBar(
+                                    content: Text(scanModes[_currMode.code]),
                                     duration: Duration(milliseconds: 500),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
+                                if (_currMode == ScanType.bulk){
+                                  print("bulk scan dect\n");
+                                  _submitSessionPhotos();
+                                }
                               },
                               child: Container(
                                 width: 70,
@@ -389,3 +418,4 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
     );
   }
 }
+//make bulk scan different
