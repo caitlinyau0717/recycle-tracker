@@ -12,8 +12,29 @@ class CreateAccountPage extends StatefulWidget {
 }
 
 class _CreateAccountPageState extends State<CreateAccountPage> {
+  var username;
+  var fullname;
+  var password;
+  var imageurl;
+  var state;
+
   final ImagePicker _picker = ImagePicker();
   File? _profileImage;
+
+
+  late DatabaseHandler db;
+  Future<void> _initDb() async {
+    db = await DatabaseHandler.createInstance();
+    await db.openConnection();
+  }
+
+  //initialize async database handler and actionable database handler
+  @override
+  void initState() {
+    super.initState();
+    _initDb();
+  }
+
 
   Future<void> _pickImage() async {
     final XFile? image =
@@ -26,13 +47,10 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
-    var username;
-    var fullname;
-    var password;
-    var imageurl;
-    var state;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -185,9 +203,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 50, vertical: 15),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         //add account to database
-                        createAccount(username, fullname, password, state, "temp");
+                        await db.createAccount(username, fullname, password, state, "temp");
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
