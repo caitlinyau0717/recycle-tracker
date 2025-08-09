@@ -232,3 +232,5 @@ Widget _buildScannedItem(String barcode, int index) {
   );
 }
 }
+
+//commit test
