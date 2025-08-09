@@ -9,12 +9,16 @@ import 'profile_page.dart';
 import 'home.dart';
 import 'interPageComms.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
+import 'quantity_advanced.dart';
+
+
 import 'package:provider/provider.dart';
 
 class ScanDetailPage extends StatelessWidget {
   final List<File> images;
   final List<String> barcodeValues;
   final List<int> barcodeIndex;
+
   
 
   const ScanDetailPage({
@@ -162,7 +166,7 @@ class ScanDetailPage extends StatelessWidget {
   }
 
   /// Fetches deposit value for a given barcode using OpenFoodFacts
-  Future<String> fetchProductInfo(String barcode) async {
+  Future<String?> fetchProductInfo(String barcode) async {
     OpenFoodAPIConfiguration.userAgent = UserAgent(
       name: 'MyScannerApp',
       url: 'https://example.com',
@@ -193,12 +197,13 @@ class ScanDetailPage extends StatelessWidget {
         break;
       }
     }
-    return isBev ? '0.05' : '0.05'; // currently same value
+    return fetchBottleInfo(barcode: barcode, stateCode: 'NY');
+
   }
 
   /// Builds the live list item view
   Widget _buildScannedItem(String barcode, int index) {
-    return FutureBuilder<String>(
+    return FutureBuilder<String?>(
       future: fetchProductInfo(barcode),
       builder: (context, snapshot) {
         String displayValue;
