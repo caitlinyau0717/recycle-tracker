@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recycletracker/pages/home.dart';
 import 'package:recycletracker/db_connection.dart';
+import 'package:recycletracker/pages/login_page.dart';
 
 class CreateAccountPage extends StatefulWidget {
   const CreateAccountPage({super.key});
@@ -204,6 +205,20 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                             horizontal: 50, vertical: 15),
                       ),
                       onPressed: () async {
+                        // check if any fields are empty. if they are, don't try to create account.
+                        if (username == null || username.trim().isEmpty ||
+                            password == null || password.trim().isEmpty ||
+                            fullname == null || fullname.trim().isEmpty ||
+                            state == null || state.toString().trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please fill out all required fields"),
+                              duration: Duration(milliseconds: 1500),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
                         //add account to database
                         await db.createAccount(username, fullname, password, state, "temp");
                         Navigator.pushReplacement(
@@ -219,7 +234,21 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 15),
+
+                  // Switch to login page button
+                  Center(child: TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                      );
+                    },
+                    child: const Text("Already have an account? Login."),
+                  ),                  
+                ),
                 ],
               ),
             ),
