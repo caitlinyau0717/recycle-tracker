@@ -24,8 +24,8 @@ class StateBottleRules {
 //MAP FOR STATE BOTTLE DEPOSIT RULES
 final Map<String, StateBottleRules> stateRules = {
   'CA': StateBottleRules(
-    depositSmall: 0.05, // <= 24 fl oz
-    depositLarge: 0.10, // > 24 fl oz
+    depositSmall: 0.05, 
+    depositLarge: 0.10, 
     depositSpecial: 0.25, // boxed wine, wine pouches, cartons
     includedCategories: [
       'beer', 'soft drinks', 'water', 'boxed wine', 'wine pouches', 'cartons'
@@ -173,14 +173,125 @@ double? convertQuantityToFlOz(String quantityStr) {
   }
 }
 
+double? getDepositFor({
+  required String stateCode,
+  required String category,
+  required double volumeFlOz,
+}) {
+  final rules = stateRules[stateCode];
+  if (rules == null) return null; // No bottle bill in that state
 
-//TODO: make a function to return brand, quantity, and recycling price based on openfoodfacts api and the state.
-String getBottleInfo(String brand, double quantityFlOz, String state) {
-  double recyclingPrice = getRecyclingPrice(state);
-  return "Brand: $brand\nQuantity: $quantityFlOz fl oz\nRecycling Price: \$$recyclingPrice";
+  final catLower = category.toLowerCase();
+
+  // Check exclusions first
+  if (rules.excludedCategories.any((ex) =>
+      catLower.contains(ex.toLowerCase()))) {
+    return 0.0;
+  }
+
+  // Check inclusions
+  final isIncluded = rules.includedCategories.any((inc) =>
+      catLower.contains(inc.toLowerCase()) || inc == 'everything');
+  if (!isIncluded) return 0.0;
+
+  // Special deposit for boxed wine, wine pouches, cartons, etc.
+  if (rules.depositSpecial != null &&
+      (catLower.contains('boxed wine') ||
+       catLower.contains('wine pouch') ||
+       catLower.contains('carton'))) {
+    return rules.depositSpecial;
+  }
+
+  // Volume based deposit logic if breakpoint is defined
+  if (rules.volumeBreakpointFlOz != null && rules.depositLarge != null) {
+    final breakpoint = rules.volumeBreakpointFlOz!;
+    return volumeFlOz > breakpoint ? rules.depositLarge : rules.depositSmall;
+  }
+
+  // Otherwise return the small deposit if available
+  return rules.depositSmall;
 }
 
 
+
+//TODO: make a function to return brand, quantity, and recycling price based on openfoodfacts api and the state.
+
+Future<String?> fetchBottleInfo({
+  required String barcode,
+  required String stateCode,
+}) async {
+  // Configure API user agent (make sure set globally once in main)
+  OpenFoodAPIConfiguration.userAgent =
+      UserAgent(name: 'Your app name', url: 'Your url, if applicable');
+
+  // Query configuration with the barcode
+  final config = ProductQueryConfiguration(
+    barcode,
+    version: ProductQueryVersion.v3,
+    language: OpenFoodFactsLanguage.ENGLISH,
+      fields: [
+        ProductField.BRANDS,
+        ProductField.QUANTITY,
+        ProductField.CATEGORIES_TAGS,
+    ],
+  );
+
+  // Fetch product from OpenFoodFacts
+  final productResult = await OpenFoodAPIClient.getProductV3(config);
+
+  if (productResult.status != 1 || productResult.product == null) {
+    return null; // Product not found or error
+  }
+
+  final product = productResult.product!;
+
+  // Brand may be a list or string, fallback to first or empty
+  final brand = product.brands ?? "Unknown Brand";
+
+  // Quantity is string like "500 ml", "1.5 l", "12 fl oz"
+  final quantityStr = product.quantity ?? "";
+
+  // Convert quantity string to fluid ounces
+  final quantityFlOz = convertQuantityToFlOz(quantityStr) ?? 0.0;
+
+  // We don't have category from this query (simplify: use 'beer' or generic)
+  // For better, use product.categoriesTags (not requested in fields) or add field if needed
+  String category = "beer"; // Simplified default category — you can improve this!
+
+  // Get deposit price from your function
+  final depositPrice = getDepositFor(
+    stateCode: stateCode,
+    category: category,
+    volumeFlOz: quantityFlOz,
+  );
+
+  // Format result string
+  return '''
+Brand: $brand
+Quantity: ${quantityFlOz.toStringAsFixed(2)} fl oz
+Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}
+''';
+}
+
+void main() async {
+  // Example barcode and state
+  String barcode = '5000112654523'; // Replace with a real product barcode
+  String stateCode = 'CA';
+
+  String? result = await fetchBottleInfo(barcode: barcode, stateCode: stateCode);
+
+  if (result != null) {
+    print('Bottle info:\n$result');
+  } else {
+    print('Product not found or error occurred.');
+  }
+}
+
+
+
+
+
+/*
 void main(List<String> arguments) async {
   OpenFoodAPIConfiguration.userAgent =
       UserAgent(name: 'Your app name', url: 'Your url, if applicable');
@@ -266,6 +377,6 @@ void main(List<String> arguments) async {
   //will convert into a function to return a string later.
 
 }
-
+*/
 
 
