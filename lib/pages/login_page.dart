@@ -3,8 +3,7 @@ import 'package:recycletracker/pages/create_account.dart';
 import 'package:recycletracker/pages/home.dart';
 import 'package:recycletracker/db_connection.dart';
 
-// This class represents the Login Page screen
-// It is a StatefulWidget because it will hold state for user input and validation
+// LoginPage is the screen where the user can log in with their credentials
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
