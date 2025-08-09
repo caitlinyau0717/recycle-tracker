@@ -5,6 +5,9 @@ import 'package:recycletracker/pages/home.dart';
 import 'package:recycletracker/db_connection.dart';
 import 'package:provider/provider.dart';
 import 'interPageComms.dart';
+import 'package:recycletracker/pages/login_page.dart';
+
+// CreateAccountPage is the screen where user creates a new account
 class CreateAccountPage extends StatefulWidget {
   const CreateAccountPage({super.key});
 
@@ -13,30 +16,35 @@ class CreateAccountPage extends StatefulWidget {
 }
 String _checkUsername = '';
 class _CreateAccountPageState extends State<CreateAccountPage> {
+	// Variables to store user input values, with type suffix for clarity
   var username;
   var fullname;
   var password;
   var imageurl;
   var state;
 
+	// For storing picked profile image file
   final ImagePicker _picker = ImagePicker();
   File? _profileImage;
 
-  //Database handler
+  // Database handler
   late DatabaseHandler db;
+
+  
+	// Initialize database connection asynchronously
   Future<void> _initDb() async {
     db = await DatabaseHandler.createInstance();
     await db.openConnection();
   }
 
-  //Initialize database handler on load of page
+	// Called once when widget is created to initialize the database handler
   @override
   void initState() {
     super.initState();
     _initDb();
   }
 
-
+	// Function to pick an image from gallery and update UI
   Future<void> _pickImage() async {
     final XFile? image =
         await _picker.pickImage(source: ImageSource.gallery);
@@ -48,16 +56,15 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     }
   }
 
-
+	// Build method creates the UI for this screen
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Top Banner
+            // Top Banner with logo
             Container(
               color: const Color(0xFFD5EFCD),
               padding: EdgeInsets.only(
@@ -73,7 +80,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
             ),
             const SizedBox(height: 20),
 
-            // Form
+						// Form inputs with horizontal padding
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Column(
@@ -84,6 +91,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                           TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 25),
 
+                  // Username input field
                   const Text("Username:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
@@ -100,6 +108,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: 15),
 
+                  // Password input field
                   const Text("Password:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
@@ -117,6 +126,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: 15),
 
+                  // Name input field
                   const Text("Name:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
@@ -132,6 +142,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: 15),
 
+                  // State dropdown menu
                   const Text("State:",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
@@ -165,39 +176,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: 25),
 
-                  // Chris: Upload photo, pfp for users
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: _pickImage,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.grey.shade300,
-                            image: _profileImage != null
-                                ? DecorationImage(
-                                    image: FileImage(_profileImage!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                          child: _profileImage == null
-                              ? const Center(
-                                  child: Text("upload\nphoto",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 12)),
-                                )
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      const Text("(optional)"),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-
                   // Create Account Button
                   Center(
                     child: ElevatedButton(
@@ -206,10 +184,29 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 50, vertical: 15),
                       ),
+                      // When pressed, validate inputs and create account if valid
                       onPressed: () async {
-                        //add account to database
+                        // Check if any field is empty
+                        if (username == null || username.trim().isEmpty ||
+                            password == null || password.trim().isEmpty ||
+                            fullname == null || fullname.trim().isEmpty ||
+                            state == null || state.toString().trim().isEmpty) {
+                          // Show error message if validation fails
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please fill out all required fields"),
+                              duration: Duration(milliseconds: 1500),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
+                        // Add account to database
                         await db.createAccount(username, fullname, password, state, "temp");
+
                         db.closeConnection();
+                        
+                        // Navigate to Home page replacing current page
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
@@ -223,7 +220,21 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 15),
+
+                  // Button to switch to Login page if user already has account
+                  Center(child: TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                      );
+                    },
+                    child: const Text("Already have an account? Login."),
+                  ),                  
+                ),
                 ],
               ),
             ),
