@@ -7,6 +7,8 @@ import 'ScanDetailPage.dart';
 import 'session_gallery_page.dart';
 import 'profile_page.dart';
 import 'home.dart';
+import 'package:recycletracker/db_connection.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   enum ScanType {
@@ -18,6 +20,9 @@ final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
       ScanType.values.firstWhere((e) => e.code == code);
   }
 class CameraPage extends StatefulWidget {
+  final mongo.ObjectId id;
+  CameraPage({super.key, required this.id});
+
   @override
   _CameraPageState createState() => _CameraPageState();
 }
@@ -143,6 +148,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
           images: _sessionPhotos,
           barcodeValues: scannedBarcodes,
           barcodeIndex: _barcodeOrigin,
+          id: widget.id
         ),
       ),
     );
@@ -212,7 +218,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                         onTap: () {
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(builder: (context) => HomePage()),
+                            MaterialPageRoute(builder: (context) => HomePage(id: widget.id)),
                             (Route<dynamic> route) => false,
                           );
                         },
@@ -389,7 +395,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                  MaterialPageRoute(builder: (context) => ProfilePage(id: widget.id)),
                 );
               },
               child: CircleAvatar(
@@ -402,7 +408,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
+                  MaterialPageRoute(builder: (context) => HomePage(id: widget.id)),
                   (Route<dynamic> route) => false,
                 );
               },

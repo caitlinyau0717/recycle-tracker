@@ -3,18 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import '../models/scan_session.dart'; // relative path from pages folder
 import 'profile_page.dart';
 import 'home.dart';
 import 'interPageComms.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
 import 'quantity_advanced.dart';
+import 'package:recycletracker/db_connection.dart';
 
 
 import 'package:provider/provider.dart';
 
 class ScanDetailPage extends StatelessWidget {
+  final mongo.ObjectId id;
   final List<File> images;
   final List<String> barcodeValues;
   final List<int> barcodeIndex;
@@ -26,6 +28,7 @@ class ScanDetailPage extends StatelessWidget {
     required this.images,
     required this.barcodeValues,
     required this.barcodeIndex,
+    required this.id
   });
 
   @override
@@ -140,7 +143,7 @@ class ScanDetailPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                  MaterialPageRoute(builder: (context) => ProfilePage(id: id)),
                 );
               },
               child: const CircleAvatar(
@@ -152,7 +155,7 @@ class ScanDetailPage extends StatelessWidget {
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
+                  MaterialPageRoute(builder: (context) => HomePage(id: id)),
                   (Route<dynamic> route) => false,
                 );
               },
@@ -254,8 +257,8 @@ class ScanDetailPage extends StatelessWidget {
     final items = <ScanItem>[];
     double total = 0.0;
     for (int i = 0; i < barcodeValues.length; i++) {
-      final dStr = deposits[i].trim().replaceAll('\$', '');
-      final d = double.tryParse(dStr) ?? 0.0;
+      final dStr = deposits[i]?.trim().replaceAll('\$', '');
+      final d = double.tryParse(dStr!) ?? 0.0;
       total += d;
       items.add(
         ScanItem(

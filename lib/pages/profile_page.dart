@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'edit_profile_page.dart';
 import 'camera_page.dart';
 import 'home.dart';
 import '../db_connection.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final mongo.ObjectId id;
+  const ProfilePage({super.key, required this.id});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -46,7 +48,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: () {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => HomePage()),
+                    MaterialPageRoute(builder: (context) => HomePage(id: widget.id)),
                     (route) => false,
                   );
                 },
@@ -172,7 +174,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
+                  MaterialPageRoute(builder: (context) => HomePage(id: widget.id)),
                   (Route<dynamic> route) => false,
                 );
               },
@@ -183,7 +185,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => CameraPage()),
+                  MaterialPageRoute(builder: (context) => CameraPage(id: widget.id)),
                 );
               },
             ),

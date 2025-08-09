@@ -34,8 +34,25 @@ class _LoginPageState extends State<LoginPage> {
     _initDb(); // Initialize database connection on page load
   }
 
+  //override build to ensure that database is initialized before the login page loads
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder(
+        //waiting for database initialization method to be ran
+        future: _initDb(),
+        builder: (context, snapshot) {
+          if(snapshot.connectionState != ConnectionState.done) {
+            //display loading screen if not loaded in yet
+            return const Center(child: CircularProgressIndicator());
+          }
+          //now build login page after connection completed
+          return _buildLoginForm(context);
+        }
+    );
+  }
+
+  //build the actual login form
+  Widget _buildLoginForm(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -122,10 +139,10 @@ class _LoginPageState extends State<LoginPage> {
                               if (authenticated) {
                                 // Navigate to HomePage if login is successful
                                 var id = await db.getId(username);
-                                context.read<UserData>().setId(id);
+                                db.closeConnection();
                                 Navigator.pushReplacement(
                                   context,
-                                  MaterialPageRoute(builder: (context) => HomePage()),
+                                  MaterialPageRoute(builder: (context) => HomePage(id: id,)),
                                 );
                               } else {
                                 // Show error if password is incorrect
@@ -158,6 +175,7 @@ class _LoginPageState extends State<LoginPage> {
 												// Create Account navigation button
                         TextButton(
                           onPressed: () {
+                            db.closeConnection();
                             Navigator.push(
                               context,
                               MaterialPageRoute(
