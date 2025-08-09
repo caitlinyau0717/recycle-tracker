@@ -200,6 +200,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         // Add account to database
                         await db.createAccount(username, fullname, password, state, "temp");
 
+                        db.closeConnection();
+                        
                         // Navigate to Home page replacing current page
                         Navigator.pushReplacement(
                           context,
