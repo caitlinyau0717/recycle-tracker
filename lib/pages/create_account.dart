@@ -17,10 +17,10 @@ class CreateAccountPage extends StatefulWidget {
 String _checkUsername = '';
 class _CreateAccountPageState extends State<CreateAccountPage> {
 	// Variables to store user input values, with type suffix for clarity
-  var username;
-  var fullname;
-  var password;
-  var imageurl;
+  String username = "";
+  String fullname = "";
+  String password = "";
+  String imageurl = "";
   var state;
   var id;
 
@@ -30,7 +30,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   // Database handler
   late DatabaseHandler db;
-  
+
 	// Initialize database connection asynchronously
   Future<void> _initDb() async {
     db = await DatabaseHandler.createInstance();
@@ -60,6 +60,21 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 	// Build method creates the UI for this screen
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder(
+      //waiting for database initialization method to be ran
+        future: _initDb(),
+        builder: (context, snapshot) {
+          if(snapshot.connectionState != ConnectionState.done) {
+            //display loading screen if not loaded in yet
+            return const Center(child: CircularProgressIndicator());
+          }
+          //now build login page after connection completed
+          return _buildCreateAccountPage(context);
+        }
+    );
+  }
+
+  Widget _buildCreateAccountPage(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -201,19 +216,24 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                           );
                           return;
                         }
-                        // Add account to database
-                        await db.createAccount(username, fullname, password, state, "temp");
-                        db.closeConnection();
-                        //send id to other pages
-                        id = db.getId(username);
-                        context.read<UserData>().setId(id);
-                        // Navigate to Home page replacing current page
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => HomePage(),
-                          ),
-                        );
+                        bool exists = await db.userExists(username);
+                        if(exists) {
+                          // TODO: front end add logic for if the username already used
+                        } else {
+                          // Add account to database
+                          await db.createAccount(username, fullname, password, state, "temp");
+                          //send id to other pages
+                          id = await db.getId(username);
+                          db.closeConnection();
+                          context.read<UserData>().setId(id);
+                          // Navigate to Home page replacing current page
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HomePage(id: id),
+                            ),
+                          );
+                        }
                       },
                       child: const Text(
                         "Create Account",

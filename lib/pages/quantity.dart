@@ -121,6 +121,7 @@ String getBottleInfo(String brand, double quantityML, String state) {
   return "Brand: $brand\nQuantity: $quantityML mL\nRecycling Price: \$$recyclingPrice";
 }
 
+//placeholder so that we can run the app
 double getRecyclingPrice(String state) {
   return 0;
 }

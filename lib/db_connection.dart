@@ -43,7 +43,7 @@ class DatabaseHandler{
                               "password_hash" : password, "state" : state,
                               "pfp_url" : image, "created_at" : DateTime.now(),
                               "sessions" : [], "bottles_recycled" : 0,
-                              "amount_saved" : 0});
+                              "amount_saved" : 0.toDouble()});
   }
 
   //Returns whether or not user is in database

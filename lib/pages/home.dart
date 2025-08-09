@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recycletracker/pages/interPageComms.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,8 @@ import 'profile_page.dart';
 import 'history_detail_page.dart';
 
 class HomePage extends StatefulWidget {
-  HomePage({super.key});
+  final mongo.ObjectId id;
+  const HomePage({super.key, required this.id});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -20,21 +22,21 @@ class _HomePageState extends State<HomePage> {
   List<ScanSession> sessions = [];
   // Database handler
   late DatabaseHandler db;
+  // Load database before page
   late Future<void> _dbFuture;
-  double totalSaved = 0;
+  double totalSaved = 0.0;
 
   // Initialize database connection asynchronously
-  Future<void> _initDb() async {
+  Future<void> _initDb(mongo.ObjectId id) async {
     db = await DatabaseHandler.createInstance();
     await db.openConnection();
-    //circular issue with id
     totalSaved = await db.getAmountSaved(id);
   }
 
   @override
   void initState() {
     super.initState();
-    _dbFuture = _initDb();
+    _dbFuture = _initDb(widget.id);
     _loadSessions();
   }
 
@@ -55,7 +57,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _goToCamera(BuildContext context) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => CameraPage()),
+      MaterialPageRoute(builder: (context) => CameraPage(id: widget.id)),
     );
     // Reload sessions when coming back from scanning
     await _loadSessions();
@@ -100,9 +102,9 @@ class _HomePageState extends State<HomePage> {
     {'name': 'Sprite Can', 'color': Color.fromARGB(255, 133, 239, 137)},
   ];
 
+
   @override
   Widget build(BuildContext context) {
-    var id = context.read<UserData>().id;
     return FutureBuilder(
         future: _dbFuture,
         builder: (context, snapshot) {
@@ -116,6 +118,12 @@ class _HomePageState extends State<HomePage> {
               body: Center(child: Text('Error: ${snapshot.error}')),
             );
           }
+          return _buildHomePage(context);
+        }
+    );
+  }
+
+  Widget _buildHomePage(BuildContext context) {
           return Scaffold(
             backgroundColor: Colors.white,
             body: SingleChildScrollView(
@@ -299,7 +307,7 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const ProfilePage()),
+                            builder: (context) => ProfilePage(id: widget.id)),
                       );
                     },
                     child: const CircleAvatar(
@@ -319,7 +327,5 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           );
-        }
-    );
   }
 }
