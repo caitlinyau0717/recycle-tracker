@@ -173,7 +173,7 @@ double? convertQuantityToFlOz(String quantityStr) {
   }
 }
 
-//SYNONYMS
+//GET SYNONYMS
 const _categorySynonyms = {
   'soft drinks': ['soda', 'cola', 'pop', 'carbonated drink'],
   'beer': ['ale', 'lager', 'malt beverage'],
@@ -204,6 +204,7 @@ double? getDepositFor({
 
   final catLower = category.toLowerCase();
 
+  /*
   // Check exclusions first
   if (rules.excludedCategories.any((ex) =>
       catLower.contains(ex.toLowerCase()))) {
@@ -214,6 +215,19 @@ double? getDepositFor({
   final isIncluded = rules.includedCategories.any((inc) =>
       catLower.contains(inc.toLowerCase()) || inc == 'everything');
   if (!isIncluded) return 0.0;
+  */
+
+   // Check exclusions first
+  for (final ex in rules.excludedCategories) {
+    if (_matchesCategory(catLower, ex)) {
+      return 0.0;
+    }
+  }
+
+  // Check inclusions
+  final isIncluded = rules.includedCategories.any(
+    (inc) => _matchesCategory(catLower, inc)
+  );
 
   // Special deposit for boxed wine, wine pouches, cartons, etc.
   if (rules.depositSpecial != null &&
@@ -306,6 +320,7 @@ Product: ${product.productName ?? 'Unknown'}
 Brand: $brand
 Quantity: $quantityStr (${quantityFlOz.toStringAsFixed(2)} fl oz)
 Categories: $categories
+
 Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}
 ''';
 
@@ -316,8 +331,106 @@ Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}
 }
 void main() async {
   // Example barcode and state
-  String barcode = '5000112654523'; // Replace with a real product barcode
-  String stateCode = 'CA';
+  String barcode = '0075720000814'; // Replace with a real product barcode
+  String stateCode = 'NY';
+Future<String?> fetchBottleInfo({
+  required String barcode,
+  required String stateCode,
+}) async {
+  OpenFoodAPIConfiguration.userAgent = UserAgent(
+    name: 'BottleDepositCalculator',
+    url: 'https://github.com/your-repo',
+  );
+
+  print('Fetching product with barcode: $barcode');
+
+  try {
+    final config = ProductQueryConfiguration(
+      barcode,
+      version: ProductQueryVersion.v3,
+      language: OpenFoodFactsLanguage.ENGLISH,
+      fields: [
+        ProductField.BRANDS,
+        ProductField.QUANTITY,
+        ProductField.CATEGORIES_TAGS,
+        //ProductField.PRODUCT_NAME,
+      ],
+    );
+
+    final productResult = await OpenFoodAPIClient.getProductV3(config);
+
+    print('API response status: ${productResult.status}');
+    print('Product found: ${productResult.product != null}');
+
+    if (productResult.product == null) {
+      return 'Product not found in Open Food Facts database';
+    }
+
+    final product = productResult.product!;
+
+    // Get brand
+    final brand = product.brands?.split(',').first.trim() ?? 'Unknown Brand';
+    
+    // Get quantity
+    final quantityStr = product.quantity ?? '';
+    final quantityFlOz = convertQuantityToFlOz(quantityStr) ?? 0.0;
+    
+    // Get categories
+   // final categories = product.categoriesTags?.map((tag) => tag.replaceAll('en:', '')).join(', ') ?? 'unknown';
+    
+    //get categories, change "beverages" to "beverage"
+    final categories = product.categoriesTags
+        ?.map((tag) => tag.replaceAll('en:', '').replaceAll('beverages', 'beverage'))
+        .join(', ') ?? 'unknown';
+
+
+    // Determine the most relevant category for deposit calculation
+    String category = 'unknown';
+    if (categories.toLowerCase().contains('beer')) {
+      category = 'beer';
+    } else if (categories.toLowerCase().contains('water')) {
+      category = 'water';
+    } else if (categories.toLowerCase().contains('wine')) {
+      category = 'wine';
+    } else if (categories.toLowerCase().contains('soft drink')) {
+      category = 'soft drinks';
+    }
+    // Add more category mappings as needed
+
+    final depositPrice = getDepositFor(
+      stateCode: stateCode,
+      category: category,
+      volumeFlOz: quantityFlOz,
+    );
+
+  
+
+    return '''
+Product: ${product.productName ?? 'Unknown'}
+Brand: $brand
+Quantity: $quantityStr (${quantityFlOz.toStringAsFixed(2)} fl oz)
+Categories: $categories
+Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}
+''';
+
+  } catch (e) {
+    print('Error fetching product: $e');
+    return 'Error fetching product information: $e';
+  }
+}
+void main() async {
+  // Example barcode and state
+  String barcode = '0075720000814'; // Replace with a real product barcode
+  String stateCode = 'NY';
+
+  String? result = await fetchBottleInfo(barcode: barcode, stateCode: stateCode);
+
+  if (result != null) {
+    print('Bottle info:\n$result');
+  } else {
+    print('Product not found or error occurred.');
+  }
+}
 
   String? result = await fetchBottleInfo(barcode: barcode, stateCode: stateCode);
 
