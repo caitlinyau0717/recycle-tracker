@@ -311,14 +311,16 @@ Future<String?> fetchBottleInfo({
       volumeFlOz: quantityFlOz,
     );
 
-    return '''
-Product: ${product.productName ?? 'Unknown'}
-Brand: $brand
-Quantity: $quantityStr (${quantityFlOz.toStringAsFixed(2)} fl oz)
-Categories: $categories
+    return '''Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}''';
+    
+    /*'''
+      Product: ${product.productName ?? 'Unknown'}
+      Brand: $brand
+      Quantity: $quantityStr (${quantityFlOz.toStringAsFixed(2)} fl oz)
+      Categories: $categories
 
-Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}
-''';
+      Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}
+      ''';*/
 
   } catch (e) {
     print('Error fetching product: $e');

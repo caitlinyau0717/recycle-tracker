@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'profile_page.dart';
 import 'home.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
+import 'quantity_advanced.dart';
+
+
 class ScanDetailPage extends StatelessWidget {
   final List<File> images;
   final List<String> barcodeValues;
@@ -155,7 +158,7 @@ class ScanDetailPage extends StatelessWidget {
       ),
     );
   }
-  Future<String> fetchProductInfo(String barcode) async {
+  Future<String?> fetchProductInfo(String barcode) async {
     OpenFoodAPIConfiguration.userAgent = UserAgent(
       name: 'MyScannerApp',
       url: 'https://example.com',
@@ -176,11 +179,12 @@ class ScanDetailPage extends StatelessWidget {
     if(name == 'null'){
       return '0.0';
     }
-    return '0.05';
+    return fetchBottleInfo(barcode: barcode, stateCode: 'NY');
+
   }
 
 Widget _buildScannedItem(String barcode, int index) {
-  return FutureBuilder<String>(
+  return FutureBuilder<String?>(
     future: fetchProductInfo(barcode),
     builder: (context, snapshot) {
       String displayValue;
