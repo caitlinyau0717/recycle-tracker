@@ -311,7 +311,7 @@ Future<String?> fetchBottleInfo({
       volumeFlOz: quantityFlOz,
     );
 
-    return '''Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}''';
+    return '''\$${depositPrice?.toStringAsFixed(2) ?? '0.00'}''';
     
     /*'''
       Product: ${product.productName ?? 'Unknown'}

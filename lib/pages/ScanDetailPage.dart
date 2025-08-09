@@ -10,6 +10,7 @@ class ScanDetailPage extends StatelessWidget {
   final List<File> images;
   final List<String> barcodeValues;
   final List<int> barcodeIndex;
+
   const ScanDetailPage({
     super.key,
     required this.images,
