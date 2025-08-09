@@ -1,13 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/scan_session.dart';
 import 'camera_page.dart';
 import 'profile_page.dart';
-import 'history_detail_page.dart'; // <-- create this file
+import 'history_detail_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   HomePage({super.key});
 
-  // Pie chart data
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<ScanSession> sessions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSessions();
+  }
+
+  Future<void> _loadSessions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('scan_history');
+    if (raw != null) {
+      setState(() {
+        sessions = ScanSession.decodeList(raw);
+      });
+    } else {
+      setState(() {
+        sessions = [];
+      });
+    }
+  }
+
+  Future<void> _goToCamera(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CameraPage()),
+    );
+    // Reload sessions when coming back from scanning
+    await _loadSessions();
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final two = (int n) => n.toString().padLeft(2, '0');
+    final mm = two(dt.month);
+    final dd = two(dt.day);
+    final yy = two(dt.year % 100);
+    final hour12 = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    final min = two(dt.minute);
+    return "$mm/$dd/$yy  $hour12:$min $ampm";
+  }
+
+  // Placeholder pie chart data
   final List<PieChartSectionData> pieChartSections = [
     PieChartSectionData(
       value: 60,
@@ -35,16 +85,13 @@ class HomePage extends StatelessWidget {
     {'name': 'Sprite Can', 'color': Color.fromARGB(255, 133, 239, 137)},
   ];
 
-  final List<String> fakeSessionDates = [
-    "08/08/25",
-    "08/07/25",
-    "08/06/25",
-    "08/05/25",
-    "08/04/25",
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final totalSaved = sessions.fold<double>(
+      0.0,
+      (sum, s) => sum + s.total,
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -53,7 +100,8 @@ class HomePage extends StatelessWidget {
             // Top Banner
             Container(
               color: const Color(0xFFD5EFCD),
-              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 20, bottom: 15),
+              padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 20, bottom: 15),
               child: Center(
                 child: Image.asset(
                   'assets/logo.png',
@@ -78,18 +126,26 @@ class HomePage extends StatelessWidget {
                 ],
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Column(
+              child: Column(
                 children: [
-                  Text('Total Saved:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 10),
-                  Text('\$102.95', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color.fromRGBO(56, 118, 29, 1.0))),
+                  const Text('Total Saved:',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  Text(
+                    '\$${totalSaved.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromRGBO(56, 118, 29, 1.0)),
+                  ),
                 ],
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // Pie Chart with Legend - Bottles Recycled
+            // Pie Chart with Legend
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               padding: const EdgeInsets.all(10),
@@ -106,7 +162,8 @@ class HomePage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Text('Bottles Recycled:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Bottles Recycled:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -130,7 +187,8 @@ class HomePage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: legendItems.map((item) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 4.0),
                               child: Row(
                                 children: [
                                   Container(
@@ -160,21 +218,29 @@ class HomePage extends StatelessWidget {
 
             // History Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0, vertical: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("History", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text("History",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
-                  ...fakeSessionDates.map((date) {
+
+                  if (sessions.isEmpty)
+                    const Text("No sessions yet."),
+                  ...sessions.map((s) {
                     return ListTile(
-                      title: Text("Session on $date"),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      title: Text("Session on ${_formatDateTime(s.dateTime)}"),
+                      trailing:
+                          const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => HistoryDetailPage(sessionDate: date),
+                            builder: (context) =>
+                                HistoryDetailPage(session: s),
                           ),
                         );
                       },
@@ -192,7 +258,8 @@ class HomePage extends StatelessWidget {
       // Bottom Footer
       bottomNavigationBar: Container(
         color: const Color(0xFFD5EFCD),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        padding:
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -203,7 +270,7 @@ class HomePage extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => const ProfilePage()),
                 );
               },
-              child: CircleAvatar(
+              child: const CircleAvatar(
                 radius: 25,
                 backgroundImage: AssetImage('assets/ProfilePic.png'),
               ),
@@ -214,12 +281,7 @@ class HomePage extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.camera_alt_rounded, size: 40),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CameraPage()),
-                );
-              },
+              onPressed: () => _goToCamera(context),
             ),
           ],
         ),
