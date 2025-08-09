@@ -254,8 +254,8 @@ class ScanDetailPage extends StatelessWidget {
     final items = <ScanItem>[];
     double total = 0.0;
     for (int i = 0; i < barcodeValues.length; i++) {
-      final dStr = deposits[i].trim().replaceAll('\$', '');
-      final d = double.tryParse(dStr) ?? 0.0;
+      final dStr = deposits[i]?.trim().replaceAll('\$', '');
+      final d = double.tryParse(dStr!) ?? 0.0;
       total += d;
       items.add(
         ScanItem(

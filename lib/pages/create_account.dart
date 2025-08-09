@@ -30,12 +30,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   // Database handler
   late DatabaseHandler db;
-
   
 	// Initialize database connection asynchronously
   Future<void> _initDb() async {
     db = await DatabaseHandler.createInstance();
     await db.openConnection();
+    await Future.delayed(Duration(seconds: 3)); // manual pause
   }
 
 	// Called once when widget is created to initialize the database handler
