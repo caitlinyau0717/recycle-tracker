@@ -104,6 +104,7 @@ class _LoginPageState extends State<LoginPage> {
                                 horizontal: 50, vertical: 15),
                           ),
                         onPressed: () async {
+                          //User authentication
                           bool exists = await db.userExists(username);
                           if (exists) {
                             bool authenticated = await db.passwordCorrect(username, password);
@@ -133,6 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             );
                           }
+                          db.closeConnection();
                         },
 
                           child: const Text(
