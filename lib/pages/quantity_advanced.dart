@@ -173,6 +173,27 @@ double? convertQuantityToFlOz(String quantityStr) {
   }
 }
 
+//SYNONYMS
+const _categorySynonyms = {
+  'soft drinks': ['soda', 'cola', 'pop', 'carbonated drink'],
+  'beer': ['ale', 'lager', 'malt beverage'],
+  'water': ['mineral water', 'spring water', 'sparkling water'],
+  // Add more as needed
+};
+
+bool _matchesCategory(String productCategory, String ruleCategory) {
+  final productLower = productCategory.toLowerCase();
+  final ruleLower = ruleCategory.toLowerCase();
+  
+  // Direct match
+  if (productLower.contains(ruleLower)) return true;
+  
+  // Synonym match
+  final synonyms = _categorySynonyms[ruleLower] ?? [];
+  return synonyms.any((synonym) => productLower.contains(synonym));
+}
+
+
 double? getDepositFor({
   required String stateCode,
   required String category,
