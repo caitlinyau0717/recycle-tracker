@@ -293,7 +293,7 @@ class _CameraPageState extends State<CameraPage> with RouteAware {
                                 _captureAndSaveAndScan();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                    SnackBar(
-                                    content: Text(scanModes[_currMode.code]),
+                                    content: Text("Scanned"),
                                     duration: Duration(milliseconds: 500),
                                     behavior: SnackBarBehavior.floating,
                                   ),
