@@ -203,7 +203,7 @@ class ScanDetailPage extends StatelessWidget {
 
   /// Builds the live list item view
   Widget _buildScannedItem(String barcode, int index) {
-    return FutureBuilder<String>(
+    return FutureBuilder<String?>(
       future: fetchProductInfo(barcode),
       builder: (context, snapshot) {
         String displayValue;
