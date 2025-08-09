@@ -60,18 +60,31 @@ class DatabaseHandler{
     return(account != null);
   }
 
-  //Returns the name of a user
-  Future<String> getName(String username) async {
+  Future<ObjectId> getId(String username) async {
     DbCollection accounts = db.collection('userAccounts');
     var account = await accounts.findOne({'username' : username});
+    return(account?["_id"]);
+  }
+
+  //Returns the name of a user
+  Future<String> getName(ObjectId id) async {
+    DbCollection accounts = db.collection('userAccounts');
+    var account = await accounts.findOne({'_id' : id});
     return(account?["name"]);
   }
 
   //Returns the state of the user
-  Future<String> getState(String username) async {
+  Future<String> getState(ObjectId id) async {
     DbCollection accounts = db.collection('userAccounts');
-    var account = await accounts.findOne({'username' : username});
+    var account = await accounts.findOne({'_id' : id});
     return(account?["state"]);
+  }
+
+  //Returns the amount the user saved
+  Future<double> getAmountSaved(ObjectId id) async {
+    DbCollection accounts = db.collection('userAccounts');
+    var account = await accounts.findOne({'_id' : id});
+    return(account?["amount_saved"]);
   }
 
   //uploads the bottles to the bottle table
@@ -87,18 +100,18 @@ class DatabaseHandler{
   }
 
   //updates the brand's bottle count for a specific user
-  Future<void> updateStats(String username, List<Bottle> sessionBottles) async {
+  Future<void> updateStats(ObjectId id, List<Bottle> sessionBottles) async {
     DbCollection userStats = db.collection('personalStats');
 
     //increment the brand count each time a brand has a new bottle
     for (Bottle bottle in sessionBottles) {
       String brand = bottle.getBrand();
-      userStats.updateOne(where.eq('username',username), modify.inc("brand_map.$brand", 1));
+      userStats.updateOne(where.eq('_id',id), modify.inc("brand_map.$brand", 1));
     }
   }
 
   //create session of bottle recycling
-  Future<void> createSession(String username, List<Bottle> sessionBottles, DateTime timestamp) async {
+  Future<void> createSession(List<Bottle> sessionBottles, DateTime timestamp) async {
     DbCollection sessions = db.collection('sessions');
     DbCollection bottles = db.collection('bottles');
     List<ObjectId> bottleIds = [];
@@ -111,12 +124,12 @@ class DatabaseHandler{
 
 
   //update the sessions, value, and bottles_recycled field to include new sessions data
-  Future<void> updateUser(String username, List<Bottle> sessionBottles, DateTime timestamp) async {
+  Future<void> updateUser(ObjectId id, List<Bottle> sessionBottles, DateTime timestamp) async {
     DbCollection accounts = db.collection('userAccounts');
     DbCollection sessions = db.collection('sessions');
 
     //get the account and session
-    var account = await accounts.findOne({'username' : username});
+    var account = await accounts.findOne({'_id' : id});
     var session = await sessions.findOne({'created_at' : timestamp});
 
     //calculate the new value
@@ -126,7 +139,7 @@ class DatabaseHandler{
     }
 
     //update the account with the new session, updated value, and bottle count
-    accounts.updateOne(where.eq('username', username),
+    accounts.updateOne(where.eq('_id', id),
         ModifierBuilder()
             .push('sessions', session?['_id'])
             .set('amount_saved', sum)

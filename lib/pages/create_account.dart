@@ -22,6 +22,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   var password;
   var imageurl;
   var state;
+  var id;
 
 	// For storing picked profile image file
   final ImagePicker _picker = ImagePicker();
@@ -98,7 +99,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   TextField(
                     onChanged: (text){
                       username = text;
-                      context.read<UserData>().setUsername(text);
                     },
                     decoration: const InputDecoration(
                       hintText: "enter username",
@@ -203,9 +203,10 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         }
                         // Add account to database
                         await db.createAccount(username, fullname, password, state, "temp");
-
                         db.closeConnection();
-                        
+                        //send id to other pages
+                        id = db.getId(username);
+                        context.read<UserData>().setId(id);
                         // Navigate to Home page replacing current page
                         Navigator.pushReplacement(
                           context,

@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 class UserData extends ChangeNotifier {
-  ObjectId _username = new ObjectId();
-  ObjectId get username => _username; 
+  ObjectId _id = new ObjectId();
+  ObjectId get id => _id;
 
-  void setUsername(ObjectId value) {
-    _username = value;
+  void setId(ObjectId value) {
+    _id = value;
     notifyListeners();
   }
 }

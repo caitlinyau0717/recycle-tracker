@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:recycletracker/pages/create_account.dart';
 import 'package:recycletracker/pages/home.dart';
 import 'package:recycletracker/db_connection.dart';
+import 'package:recycletracker/pages/interPageComms.dart';
 
 // LoginPage is the screen where the user can log in with their credentials
 class LoginPage extends StatefulWidget {
@@ -119,6 +121,8 @@ class _LoginPageState extends State<LoginPage> {
                               bool authenticated = await db.passwordCorrect(username, password);
                               if (authenticated) {
                                 // Navigate to HomePage if login is successful
+                                var id = await db.getId(username);
+                                context.read<UserData>().setId(id);
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(builder: (context) => HomePage()),
