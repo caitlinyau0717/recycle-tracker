@@ -1,14 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:openfoodfacts/openfoodfacts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
+import '../models/scan_session.dart'; // relative path from pages folder
 import 'profile_page.dart';
 import 'home.dart';
 import 'interPageComms.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
 import 'package:provider/provider.dart';
+
 class ScanDetailPage extends StatelessWidget {
   final List<File> images;
   final List<String> barcodeValues;
   final List<int> barcodeIndex;
+
   const ScanDetailPage({
     super.key,
     required this.images,
@@ -54,11 +61,11 @@ class ScanDetailPage extends StatelessWidget {
                 itemCount: barcodeIndex.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
-                  int curr_Index = barcodeIndex[index];
+                  int currIndex = barcodeIndex[index];
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.file(
-                      images[curr_Index],
+                      images[currIndex],
                       width: 120,
                       height: 140,
                       fit: BoxFit.cover,
@@ -101,7 +108,7 @@ class ScanDetailPage extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context, true),
+                  onPressed: () => _saveSessionAndClose(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -131,9 +138,8 @@ class ScanDetailPage extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => const ProfilePage()),
                 );
               },
-              child: CircleAvatar(
+              child: const CircleAvatar(
                 radius: 25,
-                // CHRIS: PROFILE PIC GOES HERE
                 backgroundImage: AssetImage('assets/ProfilePic.png'),
               ),
             ),
@@ -147,18 +153,15 @@ class ScanDetailPage extends StatelessWidget {
               },
               child: Image.asset('assets/logo.png', height: 40),
             ),
-            IconButton(
-              icon: const Icon(Icons.camera_alt_rounded, size: 40),
-              onPressed: () {
-                // Already on camera screen
-              },
-            ),
+            const Icon(Icons.camera_alt_rounded, size: 40),
           ],
         ),
       ),
     );
   }
-    Future<String> fetchProductInfo(String barcode) async {
+
+  /// Fetches deposit value for a given barcode using OpenFoodFacts
+  Future<String> fetchProductInfo(String barcode) async {
     OpenFoodAPIConfiguration.userAgent = UserAgent(
       name: 'MyScannerApp',
       url: 'https://example.com',
@@ -173,65 +176,118 @@ class ScanDetailPage extends StatelessWidget {
     final result = await OpenFoodAPIClient.getProductV3(config);
 
     final name = result.product?.productName ?? 'null';
-    String packaging = result.product?.packaging?? 'null';
-    List<String> categories = result.product?.categoriesTags??[];
+    String packaging = result.product?.packaging ?? 'null';
+    List<String> categories = result.product?.categoriesTags ?? [];
     packaging = packaging.toLowerCase();
-    String state = 'new york';
-    if(name == 'null'){
+
+    if (name == 'null') {
       return '0.00';
     }
+
     bool isBev = false;
-    for (String tag in categories){
+    for (String tag in categories) {
       tag = tag.toLowerCase();
-      if(tag.contains("beverage")){
-       isBev = true;
-       break;
+      if (tag.contains("beverage")) {
+        isBev = true;
+        break;
       }
     }
-    if(isBev == true){
-      return '0.05';
-    }
-    return '0.05';
+    return isBev ? '0.05' : '0.05'; // currently same value
   }
 
-Widget _buildScannedItem(String barcode, int index) {
-  return FutureBuilder<String>(
-    future: fetchProductInfo(barcode),
-    builder: (context, snapshot) {
-      String displayValue;
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        displayValue = 'Loading...';
-      } else if (snapshot.hasError) {
-        displayValue = 'Error';
-      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-        displayValue = '\$0.00'; // fallback value if empty string
-      } else {
-        displayValue = snapshot.data!;
-      }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Item $index',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+  /// Builds the live list item view
+  Widget _buildScannedItem(String barcode, int index) {
+    return FutureBuilder<String>(
+      future: fetchProductInfo(barcode),
+      builder: (context, snapshot) {
+        String displayValue;
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          displayValue = 'Loading...';
+        } else if (snapshot.hasError) {
+          displayValue = 'Error';
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          displayValue = '\$0.00';
+        } else {
+          displayValue = snapshot.data!;
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Item $index',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
                 ),
-              ),
-              Text(displayValue, style: const TextStyle(fontSize: 16)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Barcode: $barcode',
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
-          ),
-          const Divider(color: Colors.green),
-        ],
+                Text(displayValue, style: const TextStyle(fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Barcode: $barcode',
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const Divider(color: Colors.green),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Saves the session to SharedPreferences and returns to previous page
+  Future<void> _saveSessionAndClose(BuildContext context) async {
+    // 1) Resolve deposits
+    final deposits = await Future.wait(
+      barcodeValues.map((b) async => await fetchProductInfo(b)),
+    );
+
+    // 2) Build ScanItems
+    final items = <ScanItem>[];
+    double total = 0.0;
+    for (int i = 0; i < barcodeValues.length; i++) {
+      final dStr = deposits[i].trim().replaceAll('\$', '');
+      final d = double.tryParse(dStr) ?? 0.0;
+      total += d;
+      items.add(
+        ScanItem(
+          barcode: barcodeValues[i],
+          deposit: d.toStringAsFixed(2),
+        ),
       );
-    },
-  );
-}
+    }
+
+    // 3) Store selected image paths
+    final selectedPaths = barcodeIndex.map((idx) => images[idx].path).toList();
+
+    // 4) Create session
+    final session = ScanSession(
+      id: const Uuid().v4(),
+      dateTime: DateTime.now(),
+      items: items,
+      total: total,
+      imagePaths: selectedPaths,
+    );
+
+    // 5) Save to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'scan_history';
+    final existing = prefs.getString(key);
+    final sessions = existing == null
+        ? <ScanSession>[]
+        : ScanSession.decodeList(existing);
+
+    sessions.insert(0, session); // newest first
+    const maxSessions = 5;
+    if (sessions.length > maxSessions) {
+      sessions.removeRange(maxSessions, sessions.length);
+    }
+
+    await prefs.setString(key, ScanSession.encodeList(sessions));
+
+    // 6) Pop back
+    Navigator.pop(context, true);
+  }
 }
