@@ -15,6 +15,7 @@ class ScanDetailPage extends StatelessWidget {
   final List<File> images;
   final List<String> barcodeValues;
   final List<int> barcodeIndex;
+  
 
   const ScanDetailPage({
     super.key,
@@ -25,7 +26,7 @@ class ScanDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(context.read<UserData>().username);
+    var id = context.read<UserData>().id;
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
