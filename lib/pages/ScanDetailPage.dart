@@ -7,6 +7,9 @@ import 'package:uuid/uuid.dart';
 import '../models/scan_session.dart'; // relative path from pages folder
 import 'profile_page.dart';
 import 'home.dart';
+import 'interPageComms.dart';
+import 'package:openfoodfacts/openfoodfacts.dart';
+import 'package:provider/provider.dart';
 
 class ScanDetailPage extends StatelessWidget {
   final List<File> images;
@@ -22,6 +25,7 @@ class ScanDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(context.read<UserData>().username);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(

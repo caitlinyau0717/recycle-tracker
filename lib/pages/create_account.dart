@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recycletracker/pages/home.dart';
 import 'package:recycletracker/db_connection.dart';
+import 'package:provider/provider.dart';
+import 'interPageComms.dart';
 import 'package:recycletracker/pages/login_page.dart';
 
 // CreateAccountPage is the screen where user creates a new account
@@ -12,7 +14,7 @@ class CreateAccountPage extends StatefulWidget {
   @override
   State<CreateAccountPage> createState() => _CreateAccountPageState();
 }
-
+String _checkUsername = '';
 class _CreateAccountPageState extends State<CreateAccountPage> {
 	// Variables to store user input values, with type suffix for clarity
   var username;
@@ -96,6 +98,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   TextField(
                     onChanged: (text){
                       username = text;
+                      context.read<UserData>().setUsername(text);
                     },
                     decoration: const InputDecoration(
                       hintText: "enter username",
@@ -112,6 +115,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   TextField(
                     onChanged: (text){
                       password = text;
+                      _checkUsername = text;
                     },
                     obscureText: true,
                     decoration: InputDecoration(
@@ -240,3 +244,4 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     );
   }
 }
+

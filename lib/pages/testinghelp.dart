@@ -1,15 +1,13 @@
 import 'dart:io';
-import 'package:mongo_dart/mongo_dart.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
-void main(List<String> arguments) async {
-  OpenFoodAPIConfiguration.userAgent = UserAgent(name: 'Your app name', url: 'Your url, if applicable');
+void main() async {
+  OpenFoodAPIConfiguration.userAgent = UserAgent(name: 'recycle-tracker', url: 'we dont have one');
   ProductQueryConfiguration config = ProductQueryConfiguration(
-    '5000112654523',
+    '5449000000996',
     version: ProductQueryVersion.v3,
     language: OpenFoodFactsLanguage.ENGLISH,
   );
   ProductResultV3 product = await OpenFoodAPIClient.getProductV3(config);
-  //print('Hello world: ${food_facts_project.calculate()}!');
   print("packaging\n");
   print(product.product?.packaging); // Coca Cola Zero
   List<String> here = product.product?.categoriesTags??[];
@@ -20,8 +18,7 @@ void main(List<String> arguments) async {
       print("ok");
     }
   }
-  //Quantity
-  //
+  
   String quantity = product.product?.quantity??"";
   quantity = quantity.toLowerCase();
   String quantityMeasured = "";
@@ -50,5 +47,5 @@ void main(List<String> arguments) async {
   print(quantityMeasured);
   print(doubleQuantity);
   //quantity = quantity.substring(0,fluidFound);
-  //print(quantity);
+  print(quantity);
 }
