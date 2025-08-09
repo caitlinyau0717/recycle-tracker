@@ -42,7 +42,6 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(builder: (context) => CameraPage()),
     );
-    // Reload sessions when coming back from scanning
     await _loadSessions();
   }
 
@@ -57,7 +56,7 @@ class _HomePageState extends State<HomePage> {
     return "$mm/$dd/$yy  $hour12:$min $ampm";
   }
 
-  // Placeholder pie chart data
+  // Placeholder pie chart data (you can wire this to sessions later)
   final List<PieChartSectionData> pieChartSections = [
     PieChartSectionData(
       value: 60,
@@ -87,10 +86,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final totalSaved = sessions.fold<double>(
-      0.0,
-      (sum, s) => sum + s.total,
-    );
+    final totalSaved = sessions.fold<double>(0.0, (sum, s) => sum + s.total);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -129,8 +125,7 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 children: [
                   const Text('Total Saved:',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   Text(
                     '\$${totalSaved.toStringAsFixed(2)}',
@@ -187,8 +182,7 @@ class _HomePageState extends State<HomePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: legendItems.map((item) {
                             return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 4.0),
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
                               child: Row(
                                 children: [
                                   Container(
@@ -218,14 +212,12 @@ class _HomePageState extends State<HomePage> {
 
             // History Section
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text("History",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
 
                   if (sessions.isEmpty)
@@ -233,14 +225,12 @@ class _HomePageState extends State<HomePage> {
                   ...sessions.map((s) {
                     return ListTile(
                       title: Text("Session on ${_formatDateTime(s.dateTime)}"),
-                      trailing:
-                          const Icon(Icons.arrow_forward_ios, size: 16),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                HistoryDetailPage(session: s),
+                            builder: (context) => HistoryDetailPage(session: s),
                           ),
                         );
                       },
@@ -258,8 +248,7 @@ class _HomePageState extends State<HomePage> {
       // Bottom Footer
       bottomNavigationBar: Container(
         color: const Color(0xFFD5EFCD),
-        padding:
-            const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
