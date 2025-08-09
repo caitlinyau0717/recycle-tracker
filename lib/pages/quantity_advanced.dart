@@ -220,59 +220,79 @@ Future<String?> fetchBottleInfo({
   required String barcode,
   required String stateCode,
 }) async {
-  // Configure API user agent (make sure set globally once in main)
-  OpenFoodAPIConfiguration.userAgent =
-      UserAgent(name: 'Your app name', url: 'Your url, if applicable');
+  OpenFoodAPIConfiguration.userAgent = UserAgent(
+    name: 'BottleDepositCalculator',
+    url: 'https://github.com/your-repo',
+  );
 
-  // Query configuration with the barcode
-  final config = ProductQueryConfiguration(
-    barcode,
-    version: ProductQueryVersion.v3,
-    language: OpenFoodFactsLanguage.ENGLISH,
+  print('Fetching product with barcode: $barcode');
+
+  try {
+    final config = ProductQueryConfiguration(
+      barcode,
+      version: ProductQueryVersion.v3,
+      language: OpenFoodFactsLanguage.ENGLISH,
       fields: [
         ProductField.BRANDS,
         ProductField.QUANTITY,
         ProductField.CATEGORIES_TAGS,
-    ],
-  );
+        //ProductField.PRODUCT_NAME,
+      ],
+    );
 
-  // Fetch product from OpenFoodFacts
-  final productResult = await OpenFoodAPIClient.getProductV3(config);
+    final productResult = await OpenFoodAPIClient.getProductV3(config);
 
-  if (productResult.status != 1 || productResult.product == null) {
-    return null; // Product not found or error
-  }
+    print('API response status: ${productResult.status}');
+    print('Product found: ${productResult.product != null}');
 
-  final product = productResult.product!;
+    if (productResult.product == null) {
+      return 'Product not found in Open Food Facts database';
+    }
 
-  // Brand may be a list or string, fallback to first or empty
-  final brand = product.brands ?? "Unknown Brand";
+    final product = productResult.product!;
 
-  // Quantity is string like "500 ml", "1.5 l", "12 fl oz"
-  final quantityStr = product.quantity ?? "";
+    // Get brand
+    final brand = product.brands?.split(',').first.trim() ?? 'Unknown Brand';
+    
+    // Get quantity
+    final quantityStr = product.quantity ?? '';
+    final quantityFlOz = convertQuantityToFlOz(quantityStr) ?? 0.0;
+    
+    // Get categories
+    final categories = product.categoriesTags?.map((tag) => tag.replaceAll('en:', '')).join(', ') ?? 'unknown';
+    
+    // Determine the most relevant category for deposit calculation
+    String category = 'unknown';
+    if (categories.toLowerCase().contains('beer')) {
+      category = 'beer';
+    } else if (categories.toLowerCase().contains('water')) {
+      category = 'water';
+    } else if (categories.toLowerCase().contains('wine')) {
+      category = 'wine';
+    } else if (categories.toLowerCase().contains('soft drink')) {
+      category = 'soft drinks';
+    }
+    // Add more category mappings as needed
 
-  // Convert quantity string to fluid ounces
-  final quantityFlOz = convertQuantityToFlOz(quantityStr) ?? 0.0;
+    final depositPrice = getDepositFor(
+      stateCode: stateCode,
+      category: category,
+      volumeFlOz: quantityFlOz,
+    );
 
-  // We don't have category from this query (simplify: use 'beer' or generic)
-  // For better, use product.categoriesTags (not requested in fields) or add field if needed
-  String category = "beer"; // Simplified default category — you can improve this!
-
-  // Get deposit price from your function
-  final depositPrice = getDepositFor(
-    stateCode: stateCode,
-    category: category,
-    volumeFlOz: quantityFlOz,
-  );
-
-  // Format result string
-  return '''
+    return '''
+Product: ${product.productName ?? 'Unknown'}
 Brand: $brand
-Quantity: ${quantityFlOz.toStringAsFixed(2)} fl oz
+Quantity: $quantityStr (${quantityFlOz.toStringAsFixed(2)} fl oz)
+Categories: $categories
 Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}
 ''';
-}
 
+  } catch (e) {
+    print('Error fetching product: $e');
+    return 'Error fetching product information: $e';
+  }
+}
 void main() async {
   // Example barcode and state
   String barcode = '5000112654523'; // Replace with a real product barcode
