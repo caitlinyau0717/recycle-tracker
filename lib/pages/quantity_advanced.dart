@@ -247,10 +247,7 @@ double? getDepositFor({
   return rules.depositSmall;
 }
 
-
-
-//TODO: make a function to return brand, quantity, and recycling price based on openfoodfacts api and the state.
-
+// Get relevant bottle information
 Future<String?> fetchBottleInfo({
   required String barcode,
   required String stateCode,
@@ -307,7 +304,6 @@ Future<String?> fetchBottleInfo({
     } else if (categories.toLowerCase().contains('soft drink')) {
       category = 'soft drinks';
     }
-    // Add more category mappings as needed
 
     final depositPrice = getDepositFor(
       stateCode: stateCode,
@@ -330,9 +326,9 @@ Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}
   }
 }
 void main() async {
-  // Example barcode and state
-  String barcode = '0075720000814'; // Replace with a real product barcode
-  String stateCode = 'NY';
+  // Test a barcode and state
+  String barcode = '0075720000814'; 
+  String stateCode = 'CT';
 Future<String?> fetchBottleInfo({
   required String barcode,
   required String stateCode,
@@ -376,7 +372,7 @@ Future<String?> fetchBottleInfo({
     final quantityFlOz = convertQuantityToFlOz(quantityStr) ?? 0.0;
     
     // Get categories
-   // final categories = product.categoriesTags?.map((tag) => tag.replaceAll('en:', '')).join(', ') ?? 'unknown';
+    // final categories = product.categoriesTags?.map((tag) => tag.replaceAll('en:', '')).join(', ') ?? 'unknown';
     
     //get categories, change "beverages" to "beverage"
     final categories = product.categoriesTags
@@ -395,8 +391,8 @@ Future<String?> fetchBottleInfo({
     } else if (categories.toLowerCase().contains('soft drink')) {
       category = 'soft drinks';
     }
-    // Add more category mappings as needed
 
+    // Add more category mappings as needed
     final depositPrice = getDepositFor(
       stateCode: stateCode,
       category: category,
@@ -418,6 +414,9 @@ Deposit Price: \$${depositPrice?.toStringAsFixed(2) ?? '0.00'}
     return 'Error fetching product information: $e';
   }
 }
+
+
+// FOR TESTING
 void main() async {
   // Example barcode and state
   String barcode = '0075720000814'; // Replace with a real product barcode
