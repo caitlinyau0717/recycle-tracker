@@ -129,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                          MaterialPageRoute(builder: (context) => EditProfilePage(id: widget.id)),
                         );
                       },
                       style: TextButton.styleFrom(

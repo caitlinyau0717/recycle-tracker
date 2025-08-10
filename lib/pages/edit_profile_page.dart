@@ -1,10 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:recycletracker/db_connection.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
-class EditProfilePage extends StatelessWidget {
-  const EditProfilePage({super.key});
+class EditProfilePage extends StatefulWidget {
+  final mongo.ObjectId id;
+
+  const EditProfilePage({super.key, required this.id});
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+class _EditProfilePageState extends State<EditProfilePage> {
+  String _username = "";
+  String _name = "";
+  String _password = "";
+
+  // DatabaseHandler instance for managing database actions
+  late DatabaseHandler db;
+
+  // Load database before page
+  late Future<void> _dbFuture;
+
+  // This function initializes the database connection
+  Future<void> _initDb(mongo.ObjectId id) async {
+    db = await DatabaseHandler.createInstance();
+    await db.openConnection();
+
+    _username = await db.getUsername(id);
+    _name = await db.getName(id);
+    _password = await db.getPassword(id);
+  }
+
+  // Called when the widget is first inserted into the widget tree
+  @override
+  void initState() {
+    super.initState();
+    _dbFuture = _initDb(widget.id); // Initialize database connection on page load
+  }
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder(
+        future: _dbFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Scaffold(
+                body: Center(child: CircularProgressIndicator())
+            );
+          }
+          if (snapshot.hasError) {
+            return Scaffold(
+              body: Center(child: Text('Error: ${snapshot.error}')),
+            );
+          }
+          return _buildEditProfilePage(context);
+        }
+    );
+  }
+
+  Widget _buildEditProfilePage(BuildContext context){
     return Scaffold(
       backgroundColor: Colors.white,
        appBar: PreferredSize(
@@ -50,21 +103,61 @@ class EditProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             
-            // CHRIS: USERNAME, PASSWORD, AND NAME GO HERE | USERS CAN CHANGE THEIR INFO HERE
+
             // Form Fields
-            _buildTextField(label: 'Username', initialValue: 'johnnydoe15'),
+            Text('Username', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            //Username
+            TextFormField(
+              initialValue: _username,
+              obscureText: false,
+              onChanged: (text){
+                _username = text;
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
             const SizedBox(height: 16),
-            _buildTextField(label: 'Password', initialValue: 'password', obscureText: true),
+            //Password
+            TextFormField(
+              initialValue: _password,
+              obscureText: true,
+              onChanged: (text){
+                _password = text;
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
             const SizedBox(height: 16),
-            _buildTextField(label: 'Name', initialValue: 'Johnny Doe'),
+            TextFormField(
+              initialValue: _name,
+              obscureText: false,
+              onChanged: (text){
+                _name = text;
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
             const SizedBox(height: 40),
 
             // Submit Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // CHRIS: DATABASE INFORMATION SHOULD UPDATE TO INFORMATION ON CLICK HERE
+                onPressed: () async {
+                  await db.updateUserProfile(widget.id, _username, _password, _name);
                   Navigator.pop(context); // Go back to profile page
                 },
                 style: ElevatedButton.styleFrom(
