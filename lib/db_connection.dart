@@ -146,8 +146,8 @@ class DatabaseHandler{
      accounts.updateOne(where.eq('_id', id),
         ModifierBuilder()
           .set('username', username)
-          .set('password', password)
-          .set('fullname', fullname)
+          .set('password_hash', password)
+          .set('name', fullname)
     );
   }
   //update the sessions, value, and bottles_recycled field to include new sessions data
