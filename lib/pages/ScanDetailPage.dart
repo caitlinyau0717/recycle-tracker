@@ -168,8 +168,8 @@ class ScanDetailPage extends StatelessWidget {
     );
   }
 
-  /// Fetches deposit value for a given barcode using OpenFoodFacts
-  Future<String?> fetchProductInfo(String barcode) async {
+  /// Fetches product name and deposit value for a given barcode using OpenFoodFacts
+  Future<Map<String, String>> fetchProductInfo(String barcode) async {
     OpenFoodAPIConfiguration.userAgent = UserAgent(
       name: 'MyScannerApp',
       url: 'https://example.com',
@@ -183,26 +183,17 @@ class ScanDetailPage extends StatelessWidget {
 
     final result = await OpenFoodAPIClient.getProductV3(config);
 
-    final name = result.product?.productName ?? 'null';
-    String packaging = result.product?.packaging ?? 'null';
-    List<String> categories = result.product?.categoriesTags ?? [];
-    packaging = packaging.toLowerCase();
+    final productName = result.product?.productName ?? 'Unknown Product';
+    
+    // Assuming fetchBottleInfo returns deposit as string like '0.05'
+    final deposit = await fetchBottleInfo(barcode: barcode, stateCode: 'NY') ?? '0.00';
 
-    if (name == 'null') {
-      return '0.00';
-    }
-
-    bool isBev = false;
-    for (String tag in categories) {
-      tag = tag.toLowerCase();
-      if (tag.contains("beverage")) {
-        isBev = true;
-        break;
-      }
-    }
-    return fetchBottleInfo(barcode: barcode, stateCode: 'NY');
-
+    return {
+      'name': productName,
+      'deposit': deposit,
+    };
   }
+
 
   /// Builds the live list item view
   Widget _buildScannedItem(String barcode, int index) {
