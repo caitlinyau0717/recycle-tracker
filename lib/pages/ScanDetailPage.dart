@@ -251,7 +251,7 @@ class _ScanDetailState extends State<ScanDetailPage>{
 
     String state = await db.getState(widget.id);
     //Shouldn't get a null value but assume NY if it is
-    return fetchBottleInfo(barcode: barcode, stateCode: usStateToAbrev[state] ?? 'NY');
+    return returnBottleinfo(barcode, 'New York');
 
   }
 
