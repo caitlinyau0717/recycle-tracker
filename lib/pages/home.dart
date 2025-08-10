@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:recycletracker/pages/interPageComms.dart';
-import 'package:provider/provider.dart';
 import 'package:recycletracker/db_connection.dart';
 import '../models/scan_session.dart';
 import 'camera_page.dart';
@@ -20,8 +18,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<ScanSession> sessions = [];
+
   // Database handler
   late DatabaseHandler db;
+
   // Load database before page
   late Future<void> _dbFuture;
   double totalSaved = 0.0;

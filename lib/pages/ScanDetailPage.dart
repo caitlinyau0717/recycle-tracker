@@ -1,27 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
+import 'package:recycletracker/bottle.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import '../models/scan_session.dart'; // relative path from pages folder
 import 'profile_page.dart';
 import 'home.dart';
-import 'interPageComms.dart';
-import 'package:openfoodfacts/openfoodfacts.dart';
 import 'quantity_advanced.dart';
 import 'package:recycletracker/db_connection.dart';
 
-
-import 'package:provider/provider.dart';
-
-class ScanDetailPage extends StatelessWidget {
+class ScanDetailPage extends StatefulWidget {
   final mongo.ObjectId id;
   final List<File> images;
   final List<String> barcodeValues;
   final List<int> barcodeIndex;
-
-  
 
   const ScanDetailPage({
     super.key,
@@ -32,8 +26,43 @@ class ScanDetailPage extends StatelessWidget {
   });
 
   @override
+  State<ScanDetailPage> createState() => _ScanDetailState();
+}
+
+class _ScanDetailState extends State<ScanDetailPage>{
+  // DatabaseHandler instance for managing database actions
+  late DatabaseHandler db;
+
+  // This function initializes the database connection
+  Future<void> _initDb() async {
+    db = await DatabaseHandler.createInstance();
+    await db.openConnection();
+  }
+
+  // Called when the widget is first inserted into the widget tree
+  @override
+  void initState() {
+    super.initState();
+    _initDb(); // Initialize database connection on page load
+  }
+
+  @override
   Widget build(BuildContext context) {
-    var id = context.read<UserData>().id;
+    return FutureBuilder(
+      //waiting for database initialization method to be ran
+        future: _initDb(),
+        builder: (context, snapshot) {
+          if(snapshot.connectionState != ConnectionState.done) {
+            //display loading screen if not loaded in yet
+            return const Center(child: CircularProgressIndicator());
+          }
+          //now build login page after connection completed
+          return _buildScanDetails(context);
+        }
+    );
+  }
+
+  Widget _buildScanDetails(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -60,20 +89,20 @@ class ScanDetailPage extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Scrollable list of session images
-          if (images.isNotEmpty)
+          if (widget.images.isNotEmpty)
             SizedBox(
               height: 140,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: barcodeIndex.length,
+                itemCount: widget.barcodeIndex.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
-                  int currIndex = barcodeIndex[index];
+                  int currIndex = widget.barcodeIndex[index];
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.file(
-                      images[currIndex],
+                      widget.images[currIndex],
                       width: 120,
                       height: 140,
                       fit: BoxFit.cover,
@@ -87,13 +116,13 @@ class ScanDetailPage extends StatelessWidget {
 
           // Barcode value list
           Expanded(
-            child: barcodeValues.isEmpty
+            child: widget.barcodeValues.isEmpty
                 ? const Center(child: Text("No barcodes found."))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: barcodeValues.length,
+                    itemCount: widget.barcodeValues.length,
                     itemBuilder: (context, index) {
-                      return _buildScannedItem(barcodeValues[index], index + 1);
+                      return _buildScannedItem(widget.barcodeValues[index], index + 1);
                     },
                   ),
           ),
@@ -111,7 +140,7 @@ class ScanDetailPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'Total: \$${(barcodeValues.length * 0.05).toStringAsFixed(2)}',
+                    'Total: \$${(widget.barcodeValues.length * 0.05).toStringAsFixed(2)}',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -143,7 +172,7 @@ class ScanDetailPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ProfilePage(id: id)),
+                  MaterialPageRoute(builder: (context) => ProfilePage(id: widget.id)),
                 );
               },
               child: const CircleAvatar(
@@ -155,7 +184,7 @@ class ScanDetailPage extends StatelessWidget {
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => HomePage(id: id)),
+                  MaterialPageRoute(builder: (context) => HomePage(id: widget.id)),
                   (Route<dynamic> route) => false,
                 );
               },
@@ -200,7 +229,29 @@ class ScanDetailPage extends StatelessWidget {
         break;
       }
     }
-    return fetchBottleInfo(barcode: barcode, stateCode: 'NY');
+
+    //Convert the state into an abreviation
+    Map<String, String> usStateToAbrev = {
+      "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
+      "California": "CA", "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE",
+      "Florida": "FL", "Georgia": "GA", "Hawaii": "HI", "Idaho": "ID", "Illinois": "IL",
+      "Indiana": "IN", "Iowa": "IA", "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA",
+      "Maine": "ME", "Maryland": "MD", "Massachusetts": "MA", "Michigan": "MI",
+      "Minnesota": "MN", "Mississippi": "MS", "Missouri": "MO", "Montana": "MT",
+      "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ",
+      "New Mexico": "NM", "New York": "NY", "North Carolina": "NC", "North Dakota": "ND",
+      "Ohio": "OH", "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA",
+      "Rhode Island": "RI", "South Carolina": "SC", "South Dakota": "SD",
+      "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT", "Virginia": "VA",
+      "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY",
+      "District of Columbia": "DC", "American Samoa": "AS", "Guam": "GU",
+      "Northern Mariana Islands": "MP", "Puerto Rico": "PR",
+      "United States Minor Outlying Islands": "UM", "Virgin Islands, U.S.": "VI",
+    };
+
+    String state = await db.getState(widget.id);
+    //Shouldn't get a null value but assume NY if it is
+    return fetchBottleInfo(barcode: barcode, stateCode: usStateToAbrev[state] ?? 'NY');
 
   }
 
@@ -250,26 +301,26 @@ class ScanDetailPage extends StatelessWidget {
   Future<void> _saveSessionAndClose(BuildContext context) async {
     // 1) Resolve deposits
     final deposits = await Future.wait(
-      barcodeValues.map((b) async => await fetchProductInfo(b)),
+      widget.barcodeValues.map((b) async => await fetchProductInfo(b)),
     );
 
     // 2) Build ScanItems
     final items = <ScanItem>[];
     double total = 0.0;
-    for (int i = 0; i < barcodeValues.length; i++) {
+    for (int i = 0; i < widget.barcodeValues.length; i++) {
       final dStr = deposits[i]?.trim().replaceAll('\$', '');
       final d = double.tryParse(dStr!) ?? 0.0;
       total += d;
       items.add(
         ScanItem(
-          barcode: barcodeValues[i],
+          barcode: widget.barcodeValues[i],
           deposit: d.toStringAsFixed(2),
         ),
       );
     }
 
     // 3) Store selected image paths
-    final selectedPaths = barcodeIndex.map((idx) => images[idx].path).toList();
+    final selectedPaths = widget.barcodeIndex.map((idx) => widget.images[idx].path).toList();
 
     // 4) Create session
     final session = ScanSession(
