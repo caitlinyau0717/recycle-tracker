@@ -185,7 +185,7 @@ class ScanDetailPage extends StatelessWidget {
 
     final productName = result.product?.productName ?? 'Unknown Product';
     
-    // Assuming fetchBottleInfo returns deposit as string like '0.05'
+    // fetchBottleInfo returns deposit as string like '0.05'
     final deposit = await fetchBottleInfo(barcode: barcode, stateCode: 'NY') ?? '0.00';
 
     return {
@@ -247,10 +247,12 @@ class ScanDetailPage extends StatelessWidget {
 
   /// Saves the session to SharedPreferences and returns to previous page
   Future<void> _saveSessionAndClose(BuildContext context) async {
+    // 1) Fetch product information
     final depositResults = await Future.wait(
       barcodeValues.map((b) => fetchProductInfo(b)),
     );
 
+    // 2) Initialize list of ScanItems and total deposit amount accumulator
     final items = <ScanItem>[];
     double total = 0.0;
 
