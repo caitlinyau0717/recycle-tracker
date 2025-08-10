@@ -66,11 +66,23 @@ class DatabaseHandler{
     return(account?["_id"]);
   }
 
+  Future<String> getUsername(ObjectId id) async {
+    DbCollection accounts = db.collection('userAccounts');
+    var account = await accounts.findOne({'_id' : id});
+    return(account?['username']);
+  }
+
   //Returns the name of a user
   Future<String> getName(ObjectId id) async {
     DbCollection accounts = db.collection('userAccounts');
     var account = await accounts.findOne({'_id' : id});
     return(account?["name"]);
+  }
+
+  Future<String> getPassword(ObjectId id) async {
+    DbCollection accounts = db.collection('userAccounts');
+    var account = await accounts.findOne({'_id' : id});
+    return(account?["password_hash"]);
   }
 
   //Returns the state of the user
@@ -128,9 +140,18 @@ class DatabaseHandler{
     sessions.insertOne({'created_at' : timestamp, 'bottles' : bottleIds});
   }
 
+  Future<void> updateUserProfile(ObjectId id, String username, String password, String fullname) async {
+    DbCollection accounts = db.collection('userAccounts');
 
+     accounts.updateOne(where.eq('_id', id),
+        ModifierBuilder()
+          .set('username', username)
+          .set('password', password)
+          .set('fullname', fullname)
+    );
+  }
   //update the sessions, value, and bottles_recycled field to include new sessions data
-  Future<void> updateUser(ObjectId id, List<Bottle> sessionBottles, DateTime timestamp) async {
+  Future<void> updateUserSessions(ObjectId id, List<Bottle> sessionBottles, DateTime timestamp) async {
     DbCollection accounts = db.collection('userAccounts');
     DbCollection sessions = db.collection('sessions');
 
