@@ -17,7 +17,29 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _notificationsEnabled = true;
   bool _showAchievementDetail = false;
   String _selectedState = "New York"; // default state
+  String _name = "Johnny Doe";
 
+
+  // DatabaseHandler instance for managing database actions
+  late DatabaseHandler db;
+
+  // Load database before page
+  late Future<void> _dbFuture;
+
+  // This function initializes the database connection
+  Future<void> _initDb(mongo.ObjectId id) async {
+    db = await DatabaseHandler.createInstance();
+    await db.openConnection();
+    _name = await db.getName(id);
+    _selectedState = await db.getState(id);
+  }
+
+  // Called when the widget is first inserted into the widget tree
+  @override
+  void initState() {
+    super.initState();
+    _dbFuture = _initDb(widget.id); // Initialize database connection on page load
+  }
   final List<String> states = [
     "California",
     "Connecticut",
@@ -34,6 +56,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder(
+      //waiting for database initialization method to be ran
+        future: _dbFuture,
+        builder: (context, snapshot) {
+          if(snapshot.connectionState != ConnectionState.done) {
+            //display loading screen if not loaded in yet
+            return const Center(child: CircularProgressIndicator());
+          }
+          //now build login page after connection completed
+          return _buildProfilePage(context);
+        }
+    );
+  }
+
+  Widget _buildProfilePage(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -84,8 +121,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Johnny Doe',
+                    Text(
+                      _name,
                       style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, height: 1.2),
                     ),
                     TextButton(
@@ -145,9 +182,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Text(state),
                   );
                 }).toList(),
-                onChanged: (value) {
+                onChanged: (value) async {
                   setState(() {
                     _selectedState = value!;
+                    db.updateState(widget.id, _selectedState);
                   });
                 },
                 decoration: InputDecoration(

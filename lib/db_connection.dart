@@ -80,6 +80,12 @@ class DatabaseHandler{
     return(account?["state"]);
   }
 
+  //Update the state of the user
+  Future<void> updateState(ObjectId id, String state) async {
+    DbCollection accounts = db.collection('userAccounts');
+    accounts.updateOne(where.eq('_id', id), modify.set('state', state));
+  }
+
   //Returns the amount the user saved
   Future<double> getAmountSaved(ObjectId id) async {
     DbCollection accounts = db.collection('userAccounts');

@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:recycletracker/pages/home.dart';
 import 'package:recycletracker/db_connection.dart';
 import 'package:provider/provider.dart';
-import 'interPageComms.dart';
 import 'package:recycletracker/pages/login_page.dart';
 
 // CreateAccountPage is the screen where user creates a new account
@@ -225,7 +224,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                           //send id to other pages
                           id = await db.getId(username);
                           db.closeConnection();
-                          context.read<UserData>().setId(id);
                           // Navigate to Home page replacing current page
                           Navigator.pushReplacement(
                             context,
