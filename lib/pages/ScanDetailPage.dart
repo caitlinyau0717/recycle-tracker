@@ -197,68 +197,75 @@ class ScanDetailPage extends StatelessWidget {
 
   /// Builds the live list item view
   Widget _buildScannedItem(String barcode, int index) {
-    return FutureBuilder<String?>(
-      future: fetchProductInfo(barcode),
-      builder: (context, snapshot) {
-        String displayValue;
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          displayValue = 'Loading...';
-        } else if (snapshot.hasError) {
-          displayValue = 'Error';
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          displayValue = '\$0.00';
-        } else {
-          displayValue = snapshot.data!;
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Item $index',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
+  return FutureBuilder<Map<String, String>>(
+    future: fetchProductInfo(barcode),
+    builder: (context, snapshot) {
+      String displayDeposit;
+      String productName;
+
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        productName = 'Loading...';
+        displayDeposit = '';
+      } else if (snapshot.hasError) {
+        productName = 'Error loading product';
+        displayDeposit = '';
+      } else if (!snapshot.hasData) {
+        productName = 'Unknown product';
+        displayDeposit = '\$0.00';
+      } else {
+        productName = snapshot.data!['name']!;
+        displayDeposit = '\$${snapshot.data!['deposit'] ?? '0.00'}';
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  productName,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                Text(displayValue, style: const TextStyle(fontSize: 16)),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Barcode: $barcode',
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-            const Divider(color: Colors.green),
-          ],
-        );
-      },
-    );
-  }
+              ),
+              Text(displayDeposit, style: const TextStyle(fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Barcode: $barcode',
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+          const Divider(color: Colors.green),
+        ],
+      );
+    },
+  );
+}
+
 
   /// Saves the session to SharedPreferences and returns to previous page
   Future<void> _saveSessionAndClose(BuildContext context) async {
-    // 1) Resolve deposits
-    final deposits = await Future.wait(
-      barcodeValues.map((b) async => await fetchProductInfo(b)),
+    final depositResults = await Future.wait(
+      barcodeValues.map((b) => fetchProductInfo(b)),
     );
 
-    // 2) Build ScanItems
     final items = <ScanItem>[];
     double total = 0.0;
+
     for (int i = 0; i < barcodeValues.length; i++) {
-      final dStr = deposits[i]?.trim().replaceAll('\$', '');
-      final d = double.tryParse(dStr!) ?? 0.0;
-      total += d;
+      final depositStr = depositResults[i]['deposit']?.trim().replaceAll('\$', '') ?? '0.0';
+      final deposit = double.tryParse(depositStr) ?? 0.0;
+      total += deposit;
+
       items.add(
         ScanItem(
           barcode: barcodeValues[i],
-          deposit: d.toStringAsFixed(2),
+          deposit: deposit.toStringAsFixed(2),
         ),
       );
     }
-
     // 3) Store selected image paths
     final selectedPaths = barcodeIndex.map((idx) => images[idx].path).toList();
 
