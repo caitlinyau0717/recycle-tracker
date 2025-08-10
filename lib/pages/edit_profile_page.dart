@@ -10,6 +10,7 @@ class EditProfilePage extends StatefulWidget {
   State<EditProfilePage> createState() => _EditProfilePageState();
 }
 class _EditProfilePageState extends State<EditProfilePage> {
+  String _ogUser = "";
   String _username = "";
   String _name = "";
   String _password = "";
@@ -26,6 +27,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     await db.openConnection();
 
     _username = await db.getUsername(id);
+    _ogUser = _username;
     _name = await db.getName(id);
     _password = await db.getPassword(id);
   }
@@ -157,7 +159,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  await db.updateUserProfile(widget.id, _username, _password, _name);
+                  bool exists = await db.userExists(_username);
+                  if(_username != _ogUser && exists){
+                    // TODO: front end add logic for if the username already used
+                  } else {
+                    await db.updateUserProfile(widget.id, _username, _password, _name);
+                  }
+
                   Navigator.pop(context); // Go back to profile page
                 },
                 style: ElevatedButton.styleFrom(
