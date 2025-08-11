@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
-import 'package:recycletracker/bottle.dart';
+import 'package:recycletracker/models/bottle.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
@@ -16,6 +16,7 @@ class ScanDetailPage extends StatefulWidget {
   final List<File> images;
   final List<String> barcodeValues;
   final List<int> barcodeIndex;
+
 
   const ScanDetailPage({
     super.key,
@@ -230,29 +231,10 @@ class _ScanDetailState extends State<ScanDetailPage>{
       }
     }
 
-    //Convert the state into an abreviation
-    Map<String, String> usStateToAbrev = {
-      "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
-      "California": "CA", "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE",
-      "Florida": "FL", "Georgia": "GA", "Hawaii": "HI", "Idaho": "ID", "Illinois": "IL",
-      "Indiana": "IN", "Iowa": "IA", "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA",
-      "Maine": "ME", "Maryland": "MD", "Massachusetts": "MA", "Michigan": "MI",
-      "Minnesota": "MN", "Mississippi": "MS", "Missouri": "MO", "Montana": "MT",
-      "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ",
-      "New Mexico": "NM", "New York": "NY", "North Carolina": "NC", "North Dakota": "ND",
-      "Ohio": "OH", "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA",
-      "Rhode Island": "RI", "South Carolina": "SC", "South Dakota": "SD",
-      "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT", "Virginia": "VA",
-      "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY",
-      "District of Columbia": "DC", "American Samoa": "AS", "Guam": "GU",
-      "Northern Mariana Islands": "MP", "Puerto Rico": "PR",
-      "United States Minor Outlying Islands": "UM", "Virgin Islands, U.S.": "VI",
-    };
-
     String state = await db.getState(widget.id);
     //Shouldn't get a null value but assume NY if it is
-    return returnBottleinfo(barcode, 'New York');
-
+    Map<String, dynamic> bottleMap = await returnBottleinfo(barcode, state);
+    return bottleMap['value'].toString();
   }
 
   /// Builds the live list item view
@@ -260,7 +242,7 @@ class _ScanDetailState extends State<ScanDetailPage>{
     return FutureBuilder<String?>(
       future: fetchProductInfo(barcode),
       builder: (context, snapshot) {
-        String displayValue;
+        String displayValue = '\$0.00';
         if (snapshot.connectionState == ConnectionState.waiting) {
           displayValue = 'Loading...';
         } else if (snapshot.hasError) {
@@ -324,30 +306,31 @@ class _ScanDetailState extends State<ScanDetailPage>{
 
     // 4) Create session
     final session = ScanSession(
-      id: const Uuid().v4(),
       dateTime: DateTime.now(),
       items: items,
       total: total,
       imagePaths: selectedPaths,
     );
 
-    // 5) Save to SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    final key = 'scan_history';
-    final existing = prefs.getString(key);
-    final sessions = existing == null
-        ? <ScanSession>[]
-        : ScanSession.decodeList(existing);
+    // 5) Convert to MongoDB-friendly map
+    final sessionMap = {
+      'user_id': widget.id,
+      'date_time': session.dateTime.toIso8601String(),
+      'items': session.items.map((item) => {
+        'barcode': item.barcode,
+        'deposit': item.deposit,
+      }).toList(),
+      'total': session.total,
+      'image_paths': session.imagePaths,
+    };
 
-    sessions.insert(0, session); // newest first
-    const maxSessions = 5;
-    if (sessions.length > maxSessions) {
-      sessions.removeRange(maxSessions, sessions.length);
-    }
+    // 6) Save to MongoDB
+    await db.db.collection('sessions').insertOne(sessionMap);
+    await db.updateAmountSaved(widget.id, session.total);
+    await db.closeConnection();
 
-    await prefs.setString(key, ScanSession.encodeList(sessions));
-
-    // 6) Pop back
+    // 7) Pop back
     Navigator.pop(context, true);
   }
+
 }

@@ -166,7 +166,8 @@ double calcQuantity(String quantity){
   return converToFL(removeUneeded(quantity, literFound), 'l');
 }
 
-Future<String> returnBottleinfo(String barcode, String state) async {
+Future<Map<String, dynamic>> returnBottleinfo(String barcode, String state) async {
+  Map<String, dynamic> returnVal = {"Error" : ""};
   OpenFoodAPIConfiguration.userAgent = UserAgent(name: 'Your app name', url: 'Your url, if applicable');
   ProductQueryConfiguration config = ProductQueryConfiguration(
     barcode,
@@ -184,16 +185,22 @@ Future<String> returnBottleinfo(String barcode, String state) async {
     }
   }
   if(notbev){
-    return "not a beverage";
+    returnVal["Error"] = "not a beverage";
+    return returnVal;
   }
   //brands
   String brands = product.product?.brands??"nulled";
   if(brands == "nulled"){
     print("no brands");
   }
+  String name = product.product?.productName??"nulled";
+  if(name == "nulled") {
+    print("no name");
+  }
   String quantity = product.product?.quantity??"nulled";
   if(quantity == "nulled"){
-    return "missing quantity";
+    returnVal["Error"] = "missing quantity";
+    return returnVal;
   }
   quantity = quantity.toLowerCase();
   String productBrand = product.product?.quantity??"nulled";
@@ -203,7 +210,12 @@ Future<String> returnBottleinfo(String barcode, String state) async {
     categoriesTagsString += cat;
   }
   //String categories, double vol, String state
-  return (calcVal(categoriesTagsString, doubleQuantity, state)).toString();
+  returnVal = {
+    'brand' : productBrand,
+    'value' : calcVal(categoriesTagsString, doubleQuantity, state),
+    'name' : name
+  };
+  return returnVal;
 }
 
 

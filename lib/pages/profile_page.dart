@@ -44,24 +44,23 @@ class _ProfilePageState extends State<ProfilePage> {
     "California",
     "Connecticut",
     "Hawaii",
-    "Iowa",
     "Maine",
     "Massachusetts",
     "Michigan",
     "New York",
     "Oregon",
     "Vermont",
-    "Guam"
   ];
 
+  //Load in database before loading in the page
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
       //waiting for database initialization method to be ran
         future: _dbFuture,
         builder: (context, snapshot) {
+          //display loading screen if not loaded in yet
           if(snapshot.connectionState != ConnectionState.done) {
-            //display loading screen if not loaded in yet
             return const Center(child: CircularProgressIndicator());
           }
           //now build login page after connection completed

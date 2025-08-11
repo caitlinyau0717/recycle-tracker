@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recycletracker/pages/home.dart';
 import 'package:recycletracker/db_connection.dart';
-import 'package:provider/provider.dart';
 import 'package:recycletracker/pages/login_page.dart';
 
 // CreateAccountPage is the screen where user creates a new account
@@ -13,13 +12,13 @@ class CreateAccountPage extends StatefulWidget {
   @override
   State<CreateAccountPage> createState() => _CreateAccountPageState();
 }
-String _checkUsername = '';
 class _CreateAccountPageState extends State<CreateAccountPage> {
 	// Variables to store user input values, with type suffix for clarity
   String username = "";
   String fullname = "";
   String password = "";
   String imageurl = "";
+  String _checkUsername = "";
   var state;
   var id;
 
@@ -165,14 +164,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                       "California",
                       "Connecticut",
                       "Hawaii",
-                      "Iowa",
                       "Maine",
                       "Massachusetts",
                       "Michigan",
                       "New York",
                       "Oregon",
                       "Vermont",
-                      "Guam"
                     ].map((state) {
                       return DropdownMenuItem(
                         value: state,
@@ -201,9 +198,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                       // When pressed, validate inputs and create account if valid
                       onPressed: () async {
                         // Check if any field is empty
-                        if (username == null || username.trim().isEmpty ||
-                            password == null || password.trim().isEmpty ||
-                            fullname == null || fullname.trim().isEmpty ||
+                        if (username == "" || username.trim().isEmpty ||
+                            password == "" || password.trim().isEmpty ||
+                            fullname == "" || fullname.trim().isEmpty ||
                             state == null || state.toString().trim().isEmpty) {
                           // Show error message if validation fails
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -215,6 +212,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                           );
                           return;
                         }
+                        //Checks if the username is already registered
                         bool exists = await db.userExists(username);
                         if(exists) {
                           // TODO: front end add logic for if the username already used

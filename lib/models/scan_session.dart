@@ -12,14 +12,12 @@ class ScanItem {
 }
 
 class ScanSession {
-  final String id; // unique, for safety if you ever need it
   final DateTime dateTime;
   final List<ScanItem> items;
   final double total; // precomputed total so list is fast
   final List<String>? imagePaths; // optional: store paths if you want thumbnails later
 
   ScanSession({
-    required this.id,
     required this.dateTime,
     required this.items,
     required this.total,
@@ -27,7 +25,6 @@ class ScanSession {
   });
 
   Map<String, dynamic> toJson() => {
-        "id": id,
         "dateTime": dateTime.toIso8601String(),
         "items": items.map((e) => e.toJson()).toList(),
         "total": total,
@@ -35,7 +32,6 @@ class ScanSession {
       };
 
   factory ScanSession.fromJson(Map<String, dynamic> j) => ScanSession(
-        id: j["id"],
         dateTime: DateTime.parse(j["dateTime"]),
         items: (j["items"] as List).map((e) => ScanItem.fromJson(e)).toList(),
         total: (j["total"] as num).toDouble(),
@@ -47,4 +43,19 @@ class ScanSession {
 
   static List<ScanSession> decodeList(String raw) =>
       (jsonDecode(raw) as List).map((e) => ScanSession.fromJson(e)).toList();
+
+  factory ScanSession.fromMongo(Map<String, dynamic> doc) {
+    return ScanSession(
+      dateTime: DateTime.parse(doc['date_time'] as String),
+      items: (doc['items'] as List).map((item) {
+        return ScanItem(
+          barcode: item['barcode'] as String,
+          deposit: item['deposit'] as String,
+        );
+      }).toList(),
+      total: (doc['total'] as num).toDouble(),
+      imagePaths: List<String>.from(doc['image_paths'] ?? []),
+    );
+  }
+
 }
