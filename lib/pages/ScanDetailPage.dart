@@ -242,7 +242,7 @@ class _ScanDetailState extends State<ScanDetailPage>{
     return FutureBuilder<String?>(
       future: fetchProductInfo(barcode),
       builder: (context, snapshot) {
-        String displayValue;
+        String displayValue = '\$0.00';
         if (snapshot.connectionState == ConnectionState.waiting) {
           displayValue = 'Loading...';
         } else if (snapshot.hasError) {
@@ -327,6 +327,7 @@ class _ScanDetailState extends State<ScanDetailPage>{
     // 6) Save to MongoDB
     await db.db.collection('sessions').insertOne(sessionMap);
     await db.updateAmountSaved(widget.id, session.total);
+    await db.closeConnection();
 
     // 7) Pop back
     Navigator.pop(context, true);

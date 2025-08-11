@@ -164,6 +164,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     // TODO: front end add logic for if the username already used
                   } else {
                     await db.updateUserProfile(widget.id, _username, _password, _name);
+                    await db.closeConnection();
                   }
 
                   Navigator.pop(context); // Go back to profile page
