@@ -1,6 +1,7 @@
 import 'package:mongo_dart/mongo_dart.dart';
 import 'logger.dart';
-import 'bottle.dart';
+import 'models/bottle.dart';
+import 'models/scan_session.dart';
 
 class DatabaseHandler{
   Db db;
@@ -105,6 +106,12 @@ class DatabaseHandler{
     return(account?["amount_saved"]);
   }
 
+  //Update the amount the user saved
+  Future<void> updateAmountSaved(ObjectId id, double value) async {
+    DbCollection accounts = db.collection('userAccounts');
+    accounts.updateOne(where.eq('_id',id), modify.inc('amount_saved', value));
+  }
+
   //uploads the bottles to the bottle table
   Future<void> uploadBottles(List<Bottle> sessionBottles) async {
     DbCollection bottles = db.collection("bottles");
@@ -172,5 +179,13 @@ class DatabaseHandler{
             .set('amount_saved', sum)
             .set('bottles_recycled', sessionBottles.length)
     );
+  }
+
+  Future<List<Map<String, dynamic>>> retrieveSessions(ObjectId id) async {
+    final results = await db.collection('sessions')
+        .find(where.eq('user_id',id) //find user
+        .sortBy('date_time', descending: true)  //sorted by latest
+        .limit(5)).toList(); // List of last 5
+    return results;
   }
 }

@@ -22,8 +22,9 @@ class _HomePageState extends State<HomePage> {
   // Database handler
   late DatabaseHandler db;
 
-  // Load database before page
+  // Load database and relevant information before page
   late Future<void> _dbFuture;
+
   double totalSaved = 0.0;
 
   // Initialize database connection asynchronously
@@ -31,27 +32,18 @@ class _HomePageState extends State<HomePage> {
     db = await DatabaseHandler.createInstance();
     await db.openConnection();
     totalSaved = await db.getAmountSaved(id);
+    List<Map<String, dynamic>> sessionsMap = await db.retrieveSessions(id);
+    sessions = sessionsMap.map((doc) => ScanSession.fromMongo(doc)).toList();
   }
 
   @override
   void initState() {
     super.initState();
     _dbFuture = _initDb(widget.id);
-    _loadSessions();
   }
 
-  Future<void> _loadSessions() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('scan_history');
-    if (raw != null) {
-      setState(() {
-        sessions = ScanSession.decodeList(raw);
-      });
-    } else {
-      setState(() {
-        sessions = [];
-      });
-    }
+  Future<void> _loadSessions(mongo.ObjectId id) async {
+
   }
 
   Future<void> _goToCamera(BuildContext context) async {
@@ -59,8 +51,6 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(builder: (context) => CameraPage(id: widget.id)),
     );
-    // Reload sessions when coming back from scanning
-    await _loadSessions();
   }
 
   String _formatDateTime(DateTime dt) {
@@ -102,12 +92,13 @@ class _HomePageState extends State<HomePage> {
     {'name': 'Sprite Can', 'color': Color.fromARGB(255, 133, 239, 137)},
   ];
 
-
+  //Ensure database is loaded before the page is
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
         future: _dbFuture,
         builder: (context, snapshot) {
+          //If not connected show loading screen
           if (snapshot.connectionState != ConnectionState.done) {
             return const Scaffold(
                 body: Center(child: CircularProgressIndicator())
@@ -118,6 +109,7 @@ class _HomePageState extends State<HomePage> {
               body: Center(child: Text('Error: ${snapshot.error}')),
             );
           }
+          //Load in actual page
           return _buildHomePage(context);
         }
     );
